@@ -1,7 +1,10 @@
 package com.daohoangson.n8n.notificationlistener.utils
 
+import com.daohoangson.n8n.notificationlistener.BuildConfig
+
 object Constants {
-    const val WEBHOOK_URL = "https://daohoangson.app.n8n.cloud/webhook-test/d904a5db-1633-42f2-84ff-dea794b002d5"
+    val WEBHOOK_BASE_URL: String = BuildConfig.WEBHOOK_BASE_URL
+    val WEBHOOK_PATH: String = BuildConfig.WEBHOOK_PATH
     const val DATABASE_NAME = "notification_listener_db"
     const val DATABASE_VERSION = 1
     const val NETWORK_TIMEOUT_SECONDS = 30L

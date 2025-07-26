@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -20,12 +21,18 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "WEBHOOK_BASE_URL", "\"https://daohoangson.app.n8n.cloud/\"")
+            buildConfigField("String", "WEBHOOK_PATH", "\"webhook-test/d904a5db-1633-42f2-84ff-dea794b002d5\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "WEBHOOK_BASE_URL", "\"https://daohoangson.app.n8n.cloud/\"")
+            buildConfigField("String", "WEBHOOK_PATH", "\"webhook-test/d904a5db-1633-42f2-84ff-dea794b002d5\"")
         }
     }
     compileOptions {
@@ -37,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -63,6 +71,10 @@ dependencies {
 
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
 
     // Testing
     testImplementation(libs.junit)

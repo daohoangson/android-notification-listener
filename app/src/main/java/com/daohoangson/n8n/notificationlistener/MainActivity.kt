@@ -31,14 +31,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.daohoangson.n8n.notificationlistener.data.repository.NotificationRepository
 import com.daohoangson.n8n.notificationlistener.ui.theme.MyApplicationTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private lateinit var repository: NotificationRepository
+    
+    @Inject
+    lateinit var repository: NotificationRepository
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        repository = NotificationRepository(this)
         
         enableEdgeToEdge()
         setContent {

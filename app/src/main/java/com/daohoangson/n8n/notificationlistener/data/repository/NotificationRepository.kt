@@ -1,26 +1,34 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
 import android.content.Context
-import com.daohoangson.n8n.notificationlistener.data.database.AppDatabase
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
-import com.daohoangson.n8n.notificationlistener.network.NetworkModule
+import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
+import com.daohoangson.n8n.notificationlistener.network.WebhookApi
+import com.daohoangson.n8n.notificationlistener.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class NotificationRepository(context: Context) {
-    private val database = AppDatabase.getDatabase(context)
-    private val failedNotificationDao = database.failedNotificationDao()
-    private val webhookApi = NetworkModule.webhookApi
+@Singleton
+class NotificationRepository @Inject constructor(
+    private val context: Context,
+    private val webhookApi: WebhookApi,
+    private val failedNotificationDao: FailedNotificationDao
+) {
     
-    suspend fun sendNotification(payload: Any) {
+    suspend fun sendNotification(jsonPayload: String) {
         withContext(Dispatchers.IO) {
             try {
-                val response = webhookApi.sendNotification(payload)
+                val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
+                val response = webhookApi.sendNotification(Constants.WEBHOOK_PATH, requestBody)
                 if (!response.isSuccessful) {
-                    storeFailedNotification(payload.toString())
+                    storeFailedNotification(jsonPayload)
                 }
             } catch (e: Exception) {
-                storeFailedNotification(payload.toString())
+                storeFailedNotification(jsonPayload)
             }
         }
     }
@@ -44,7 +52,8 @@ class NotificationRepository(context: Context) {
                 
                 for (failedNotification in failedNotifications) {
                     try {
-                        val response = webhookApi.sendNotification(failedNotification.payload)
+                        val requestBody = failedNotification.payload.toRequestBody("application/json".toMediaType())
+                        val response = webhookApi.sendNotification(Constants.WEBHOOK_PATH, requestBody)
                         if (response.isSuccessful) {
                             failedNotificationDao.deleteFailedNotification(failedNotification)
                         } else {

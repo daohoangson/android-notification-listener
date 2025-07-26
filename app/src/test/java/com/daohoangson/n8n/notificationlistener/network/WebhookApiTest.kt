@@ -1,6 +1,8 @@
 package com.daohoangson.n8n.notificationlistener.network
 
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -38,10 +40,11 @@ class WebhookApiTest {
     fun `sendNotification should return successful response on 200`() = runTest {
         // Arrange
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
-        val payload = mapOf("test" to "data")
+        val jsonPayload = """{"test":"data"}"""
+        val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
         
         // Act
-        val response = webhookApi.sendNotification(payload)
+        val response = webhookApi.sendNotification("webhook-test/test", requestBody)
         
         // Assert
         assertTrue("Response should be successful", response.isSuccessful)
@@ -49,7 +52,7 @@ class WebhookApiTest {
         
         val request = mockWebServer.takeRequest()
         assertEquals("POST", request.method)
-        assertEquals("/webhook-test/d904a5db-1633-42f2-84ff-dea794b002d5", request.path)
+        assertEquals("/webhook-test/test", request.path)
         assertTrue("Request should contain JSON", request.body.readUtf8().contains("test"))
     }
     
@@ -57,10 +60,11 @@ class WebhookApiTest {
     fun `sendNotification should return unsuccessful response on 400`() = runTest {
         // Arrange
         mockWebServer.enqueue(MockResponse().setResponseCode(400))
-        val payload = mapOf("test" to "data")
+        val jsonPayload = """{"test":"data"}"""
+        val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
         
         // Act
-        val response = webhookApi.sendNotification(payload)
+        val response = webhookApi.sendNotification("webhook-test/test", requestBody)
         
         // Assert
         assertFalse("Response should not be successful", response.isSuccessful)
@@ -71,10 +75,11 @@ class WebhookApiTest {
     fun `sendNotification should return unsuccessful response on 500`() = runTest {
         // Arrange
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
-        val payload = mapOf("test" to "data")
+        val jsonPayload = """{"test":"data"}"""
+        val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
         
         // Act
-        val response = webhookApi.sendNotification(payload)
+        val response = webhookApi.sendNotification("webhook-test/test", requestBody)
         
         // Assert
         assertFalse("Response should not be successful", response.isSuccessful)
@@ -85,25 +90,28 @@ class WebhookApiTest {
     fun `sendNotification should handle complex payload`() = runTest {
         // Arrange
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
-        val payload = mapOf(
-            "packageName" to "com.example.app",
-            "title" to "Test Notification",
-            "text" to "This is a test message",
-            "timestamp" to 1234567890L,
-            "id" to 123,
-            "tag" to "test_tag"
-        )
+        val jsonPayload = """
+            {
+                "packageName": "com.example.app",
+                "title": "Test Notification",
+                "text": "This is a test message",
+                "timestamp": 1234567890,
+                "id": 123,
+                "tag": "test_tag"
+            }
+        """.trimIndent()
+        val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
         
         // Act
-        val response = webhookApi.sendNotification(payload)
+        val response = webhookApi.sendNotification("webhook-test/test", requestBody)
         
         // Assert
         assertTrue("Response should be successful", response.isSuccessful)
         
         val request = mockWebServer.takeRequest()
-        val requestBody = request.body.readUtf8()
-        assertTrue("Request should contain packageName", requestBody.contains("com.example.app"))
-        assertTrue("Request should contain title", requestBody.contains("Test Notification"))
-        assertTrue("Request should contain text", requestBody.contains("This is a test message"))
+        val requestBodyString = request.body.readUtf8()
+        assertTrue("Request should contain packageName", requestBodyString.contains("com.example.app"))
+        assertTrue("Request should contain title", requestBodyString.contains("Test Notification")) 
+        assertTrue("Request should contain text", requestBodyString.contains("This is a test message"))
     }
 }

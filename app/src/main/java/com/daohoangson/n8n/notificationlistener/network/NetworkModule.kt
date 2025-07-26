@@ -20,7 +20,7 @@ object NetworkModule {
         .build()
     
     private val retrofit = Retrofit.Builder()
-        .baseUrl("https://daohoangson.app.n8n.cloud/")
+        .baseUrl(Constants.WEBHOOK_BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()

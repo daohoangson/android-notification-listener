@@ -1,18 +1,16 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
 import android.content.Context
-import com.daohoangson.n8n.notificationlistener.data.database.AppDatabase
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
-import com.daohoangson.n8n.notificationlistener.network.NetworkModule
 import com.daohoangson.n8n.notificationlistener.network.WebhookApi
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import okhttp3.RequestBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -22,7 +20,6 @@ import retrofit2.Response
 
 class NotificationRepositoryTest {
     private lateinit var context: Context
-    private lateinit var database: AppDatabase
     private lateinit var dao: FailedNotificationDao
     private lateinit var webhookApi: WebhookApi
     private lateinit var repository: NotificationRepository
@@ -30,20 +27,10 @@ class NotificationRepositoryTest {
     @Before
     fun setup() {
         context = mockk(relaxed = true)
-        database = mockk(relaxed = true)
         dao = mockk(relaxed = true)
         webhookApi = mockk(relaxed = true)
         
-        every { database.failedNotificationDao() } returns dao
-        
-        // Mock static methods
-        mockkObject(AppDatabase.Companion)
-        every { AppDatabase.getDatabase(context) } returns database
-        
-        mockkObject(NetworkModule)
-        every { NetworkModule.webhookApi } returns webhookApi
-        
-        repository = NotificationRepository(context)
+        repository = NotificationRepository(context, webhookApi, dao)
     }
     
     @Test
@@ -52,13 +39,13 @@ class NotificationRepositoryTest {
         val payload = "test payload"
         val successResponse = mockk<Response<Unit>>()
         every { successResponse.isSuccessful } returns true
-        coEvery { webhookApi.sendNotification(payload) } returns successResponse
+        coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returns successResponse
         
         // Act
         repository.sendNotification(payload)
         
         // Assert
-        coVerify(exactly = 1) { webhookApi.sendNotification(payload) }
+        coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
         coVerify(exactly = 0) { dao.insertFailedNotification(any()) }
     }
     
@@ -68,7 +55,7 @@ class NotificationRepositoryTest {
         val payload = "test payload"
         val failureResponse = mockk<Response<Unit>>()
         every { failureResponse.isSuccessful } returns false
-        coEvery { webhookApi.sendNotification(payload) } returns failureResponse
+        coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returns failureResponse
         coEvery { dao.insertFailedNotification(any()) } returns Unit
         
         val capturedNotification = slot<FailedNotification>()
@@ -77,7 +64,7 @@ class NotificationRepositoryTest {
         repository.sendNotification(payload)
         
         // Assert
-        coVerify(exactly = 1) { webhookApi.sendNotification(payload) }
+        coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
         coVerify(exactly = 1) { dao.insertFailedNotification(capture(capturedNotification)) }
         assertEquals(payload, capturedNotification.captured.payload)
     }
@@ -86,7 +73,7 @@ class NotificationRepositoryTest {
     fun `sendNotification exception should store in database`() = runTest {
         // Arrange
         val payload = "test payload"
-        coEvery { webhookApi.sendNotification(payload) } throws Exception("Network error")
+        coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } throws Exception("Network error")
         coEvery { dao.insertFailedNotification(any()) } returns Unit
         
         val capturedNotification = slot<FailedNotification>()
@@ -95,7 +82,7 @@ class NotificationRepositoryTest {
         repository.sendNotification(payload)
         
         // Assert
-        coVerify(exactly = 1) { webhookApi.sendNotification(payload) }
+        coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
         coVerify(exactly = 1) { dao.insertFailedNotification(capture(capturedNotification)) }
         assertEquals(payload, capturedNotification.captured.payload)
     }
@@ -126,9 +113,7 @@ class NotificationRepositoryTest {
         every { successResponse.isSuccessful } returns true
         
         coEvery { dao.getAllFailedNotifications() } returns failedNotifications
-        coEvery { webhookApi.sendNotification("payload1") } returns successResponse
-        coEvery { webhookApi.sendNotification("payload2") } returns successResponse
-        coEvery { webhookApi.sendNotification("payload3") } returns successResponse
+        coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returns successResponse
         coEvery { dao.deleteFailedNotification(any()) } returns Unit
         
         // Act
@@ -137,9 +122,7 @@ class NotificationRepositoryTest {
         // Assert
         assertTrue("All notifications should be successful", result)
         coVerify(exactly = 1) { dao.getAllFailedNotifications() }
-        coVerify(exactly = 1) { webhookApi.sendNotification("payload1") }
-        coVerify(exactly = 1) { webhookApi.sendNotification("payload2") }
-        coVerify(exactly = 1) { webhookApi.sendNotification("payload3") }
+        coVerify(exactly = 3) { webhookApi.sendNotification(any(), any<RequestBody>()) }
         coVerify(exactly = 3) { dao.deleteFailedNotification(any()) }
     }
     
@@ -158,8 +141,7 @@ class NotificationRepositoryTest {
         every { failureResponse.isSuccessful } returns false
         
         coEvery { dao.getAllFailedNotifications() } returns failedNotifications
-        coEvery { webhookApi.sendNotification("payload1") } returns successResponse
-        coEvery { webhookApi.sendNotification("payload2") } returns failureResponse
+        coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returnsMany listOf(successResponse, failureResponse)
         coEvery { dao.deleteFailedNotification(any()) } returns Unit
         
         // Act
@@ -168,8 +150,7 @@ class NotificationRepositoryTest {
         // Assert
         assertFalse("Should return false when some notifications fail", result)
         coVerify(exactly = 1) { dao.getAllFailedNotifications() }
-        coVerify(exactly = 1) { webhookApi.sendNotification("payload1") }
-        coVerify(exactly = 1) { webhookApi.sendNotification("payload2") }
+        coVerify(exactly = 2) { webhookApi.sendNotification(any(), any<RequestBody>()) }
         coVerify(exactly = 1) { dao.deleteFailedNotification(failedNotifications[0]) }
         coVerify(exactly = 0) { dao.deleteFailedNotification(failedNotifications[1]) }
     }
