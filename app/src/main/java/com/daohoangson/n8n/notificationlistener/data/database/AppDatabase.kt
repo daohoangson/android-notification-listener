@@ -7,12 +7,13 @@ import android.content.Context
 import com.daohoangson.n8n.notificationlistener.utils.Constants
 
 @Database(
-    entities = [FailedNotification::class],
+    entities = [FailedNotification::class, UndecidedNotification::class],
     version = Constants.DATABASE_VERSION,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun failedNotificationDao(): FailedNotificationDao
+    abstract fun undecidedNotificationDao(): UndecidedNotificationDao
     
     companion object {
         @Volatile
@@ -24,7 +25,8 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     Constants.DATABASE_NAME
-                ).build()
+                ).fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }
