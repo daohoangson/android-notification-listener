@@ -12,5 +12,5 @@ data class UndecidedNotification(
     val title: String?,            // For display purposes
     val text: String?,             // For display purposes
     val timestamp: Long = System.currentTimeMillis(),
-    val reason: String             // "NO_MATCH" or "IGNORED"
+    val reason: String             // "NO_MATCH" only (ignored notifications are black-holed)
 )

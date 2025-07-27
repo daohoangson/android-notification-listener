@@ -395,11 +395,7 @@ fun UndecidedNotificationCard(
             Text(
                 text = "Reason: ${notification.reason}",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (notification.reason == "IGNORED") {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
+                color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = "Time: ${java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(notification.timestamp))}",
