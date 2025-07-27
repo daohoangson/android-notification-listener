@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -90,15 +91,9 @@ fun NotificationListenerApp(
     onOpenNotificationList: () -> Unit,
     isPermissionGranted: Boolean
 ) {
-    var failedNotificationCount by remember { mutableIntStateOf(0) }
-    var undecidedNotificationCount by remember { mutableIntStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // Check notification counts
-    LaunchedEffect(Unit) {
-        failedNotificationCount = repository.getFailedNotificationCount()
-        undecidedNotificationCount = repository.getUndecidedNotificationCount()
-    }
+    // Reactive notification counts - automatically update when data changes
+    val failedNotificationCount by repository.getFailedNotificationCountFlow().collectAsState(initial = 0)
+    val undecidedNotificationCount by repository.getUndecidedNotificationCountFlow().collectAsState(initial = 0)
     
     Column(
         modifier = modifier

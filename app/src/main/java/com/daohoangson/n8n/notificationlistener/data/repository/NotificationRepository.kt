@@ -11,6 +11,7 @@ import com.daohoangson.n8n.notificationlistener.network.WebhookApi
 import com.daohoangson.n8n.notificationlistener.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
@@ -43,6 +44,14 @@ class NotificationRepository @Inject constructor(
         }
     }
     
+    // Reactive methods for real-time UI updates
+    fun getFailedNotificationCountFlow(): Flow<Int> = failedNotificationDao.getFailedNotificationCountFlow()
+    
+    fun getUndecidedNotificationCountFlow(): Flow<Int> = undecidedNotificationDao.getUndecidedNotificationCountFlow()
+    
+    fun getAllFailedNotificationsFlow(): Flow<List<FailedNotification>> = failedNotificationDao.getAllFailedNotificationsFlow()
+    
+    fun getAllUndecidedNotificationsFlow(): Flow<List<UndecidedNotification>> = undecidedNotificationDao.getAllUndecidedNotificationsFlow()
     
     suspend fun storeUndecidedNotification(
         payload: String, 

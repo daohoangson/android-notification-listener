@@ -45,29 +45,12 @@ class NotificationListActivity : ComponentActivity() {
 @Composable
 fun NotificationListScreen(repository: NotificationRepository) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var failedNotifications by remember { mutableStateOf<List<FailedNotification>>(emptyList()) }
-    var undecidedNotifications by remember { mutableStateOf<List<UndecidedNotification>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    // Reactive data streams - automatically update when database changes
+    val failedNotifications by repository.getAllFailedNotificationsFlow().collectAsState(initial = emptyList())
+    val undecidedNotifications by repository.getAllUndecidedNotificationsFlow().collectAsState(initial = emptyList())
     var showUrlSelectionDialog by remember { mutableStateOf(false) }
     var selectedUndecidedNotification by remember { mutableStateOf<UndecidedNotification?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    
-    fun reloadNotifications() {
-        coroutineScope.launch {
-            loadNotifications(repository) { failed, undecided ->
-                failedNotifications = failed
-                undecidedNotifications = undecided
-            }
-        }
-    }
-    
-    LaunchedEffect(Unit) {
-        loadNotifications(repository) { failed, undecided ->
-            failedNotifications = failed
-            undecidedNotifications = undecided
-            isLoading = false
-        }
-    }
     
     if (showUrlSelectionDialog) {
         selectedUndecidedNotification?.let { notification ->
@@ -80,7 +63,7 @@ fun NotificationListScreen(repository: NotificationRepository) {
                 onUpload = { uploadedNotification, url ->
                     showUrlSelectionDialog = false
                     selectedUndecidedNotification = null
-                    reloadNotifications()
+                    // No need to reload - data updates automatically
                 },
                 repository = repository
             )
@@ -113,21 +96,10 @@ fun NotificationListScreen(repository: NotificationRepository) {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            selectedTabIndex == 0 -> {
+        when (selectedTabIndex) {
+            0 -> {
                 FailedNotificationsList(
                     notifications = failedNotifications,
-                    onRetry = { reloadNotifications() },
-                    onDelete = { reloadNotifications() },
-                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
             }
@@ -138,8 +110,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
                         selectedUndecidedNotification = notification
                         showUrlSelectionDialog = true
                     },
-                    onDelete = { reloadNotifications() },
-                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
             }
@@ -150,7 +120,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
 @Composable
 fun <T> GenericNotificationsList(
     notifications: List<T>,
-    onDeleteAll: () -> Unit,
     repository: NotificationRepository,
     deleteAction: suspend (T) -> Unit,
     bulkDeleteAction: suspend (List<T>) -> Unit,
@@ -170,7 +139,7 @@ fun <T> GenericNotificationsList(
                     onClick = { 
                         coroutineScope.launch {
                             bulkDeleteAction(notifications)
-                            onDeleteAll()
+                            // No need to call onDeleteAll - data updates automatically
                         }
                     }
                 ) {
@@ -184,7 +153,7 @@ fun <T> GenericNotificationsList(
                 itemContent(notification) {
                     coroutineScope.launch {
                         deleteAction(notification)
-                        onDeleteAll()
+                        // No need to call onDeleteAll - data updates automatically
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -196,16 +165,12 @@ fun <T> GenericNotificationsList(
 @Composable
 fun FailedNotificationsList(
     notifications: List<FailedNotification>,
-    onRetry: (FailedNotification) -> Unit,
-    onDelete: (FailedNotification) -> Unit,
-    onDeleteAll: () -> Unit,
     repository: NotificationRepository
 ) {
     val coroutineScope = rememberCoroutineScope()
     
     GenericNotificationsList(
         notifications = notifications,
-        onDeleteAll = onDeleteAll,
         repository = repository,
         deleteAction = { repository.deleteFailedNotification(it) },
         bulkDeleteAction = { repository.deleteFailedNotifications(it) }
@@ -215,7 +180,7 @@ fun FailedNotificationsList(
             onRetry = {
                 coroutineScope.launch {
                     repository.retryFailedNotification(notification)
-                    onRetry(notification)
+                    // No need to call onRetry - data updates automatically
                 }
             },
             onDelete = onDeleteSingle
@@ -227,13 +192,10 @@ fun FailedNotificationsList(
 fun UndecidedNotificationsList(
     notifications: List<UndecidedNotification>,
     onUpload: (UndecidedNotification) -> Unit,
-    onDelete: (UndecidedNotification) -> Unit,
-    onDeleteAll: () -> Unit,
     repository: NotificationRepository
 ) {
     GenericNotificationsList(
         notifications = notifications,
-        onDeleteAll = onDeleteAll,
         repository = repository,
         deleteAction = { repository.deleteUndecidedNotification(it) },
         bulkDeleteAction = { repository.deleteUndecidedNotifications(it) }
@@ -423,13 +385,4 @@ fun UrlSelectionDialog(
             }
         }
     )
-}
-
-private suspend fun loadNotifications(
-    repository: NotificationRepository,
-    onLoaded: (List<FailedNotification>, List<UndecidedNotification>) -> Unit
-) {
-    val failedNotifications = repository.getAllFailedNotifications()
-    val undecidedNotifications = repository.getAllUndecidedNotifications()
-    onLoaded(failedNotifications, undecidedNotifications)
 }
