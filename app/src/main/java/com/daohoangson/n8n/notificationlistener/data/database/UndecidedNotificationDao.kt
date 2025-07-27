@@ -12,9 +12,6 @@ interface UndecidedNotificationDao {
     @Insert
     suspend fun insertUndecidedNotification(undecidedNotification: UndecidedNotification)
     
-    @Query("SELECT * FROM undecided_notifications ORDER BY timestamp DESC")
-    suspend fun getAllUndecidedNotifications(): List<UndecidedNotification>
-    
     @Query("SELECT * FROM undecided_notifications WHERE reason = :reason ORDER BY timestamp DESC")
     suspend fun getUndecidedNotificationsByReason(reason: String): List<UndecidedNotification>
     
@@ -26,9 +23,6 @@ interface UndecidedNotificationDao {
     
     @Query("DELETE FROM undecided_notifications")
     suspend fun deleteAllUndecidedNotifications()
-    
-    @Query("SELECT COUNT(*) FROM undecided_notifications")
-    suspend fun getUndecidedNotificationCount(): Int
     
     @Query("SELECT COUNT(*) FROM undecided_notifications")
     fun getUndecidedNotificationCountFlow(): Flow<Int>

@@ -44,7 +44,6 @@ class NotificationRepository @Inject constructor(
         }
     }
     
-    // Reactive methods for real-time UI updates
     fun getFailedNotificationCountFlow(): Flow<Int> = failedNotificationDao.getFailedNotificationCountFlow()
     
     fun getUndecidedNotificationCountFlow(): Flow<Int> = undecidedNotificationDao.getUndecidedNotificationCountFlow()
@@ -90,29 +89,7 @@ class NotificationRepository @Inject constructor(
         }
     }
     
-    suspend fun getFailedNotificationCount(): Int {
-        return withContext(Dispatchers.IO) {
-            failedNotificationDao.getFailedNotificationCount()
-        }
-    }
-    
-    suspend fun getUndecidedNotificationCount(): Int {
-        return withContext(Dispatchers.IO) {
-            undecidedNotificationDao.getUndecidedNotificationCount()
-        }
-    }
-    
-    suspend fun getAllUndecidedNotifications(): List<UndecidedNotification> {
-        return withContext(Dispatchers.IO) {
-            undecidedNotificationDao.getAllUndecidedNotifications()
-        }
-    }
-    
-    suspend fun getAllFailedNotifications(): List<FailedNotification> {
-        return withContext(Dispatchers.IO) {
-            failedNotificationDao.getAllFailedNotifications()
-        }
-    }
+
     
     suspend fun retryFailedNotification(failedNotification: FailedNotification): Boolean {
         return withContext(Dispatchers.IO) {

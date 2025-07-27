@@ -45,7 +45,6 @@ class NotificationListActivity : ComponentActivity() {
 @Composable
 fun NotificationListScreen(repository: NotificationRepository) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    // Reactive data streams - automatically update when database changes
     val failedNotifications by repository.getAllFailedNotificationsFlow().collectAsState(initial = emptyList())
     val undecidedNotifications by repository.getAllUndecidedNotificationsFlow().collectAsState(initial = emptyList())
     var showUrlSelectionDialog by remember { mutableStateOf(false) }
@@ -63,7 +62,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
                 onUpload = { uploadedNotification, url ->
                     showUrlSelectionDialog = false
                     selectedUndecidedNotification = null
-                    // No need to reload - data updates automatically
                 },
                 repository = repository
             )
@@ -139,7 +137,6 @@ fun <T> GenericNotificationsList(
                     onClick = { 
                         coroutineScope.launch {
                             bulkDeleteAction(notifications)
-                            // No need to call onDeleteAll - data updates automatically
                         }
                     }
                 ) {
@@ -153,7 +150,6 @@ fun <T> GenericNotificationsList(
                 itemContent(notification) {
                     coroutineScope.launch {
                         deleteAction(notification)
-                        // No need to call onDeleteAll - data updates automatically
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -180,7 +176,6 @@ fun FailedNotificationsList(
             onRetry = {
                 coroutineScope.launch {
                     repository.retryFailedNotification(notification)
-                    // No need to call onRetry - data updates automatically
                 }
             },
             onDelete = onDeleteSingle

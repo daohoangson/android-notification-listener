@@ -91,7 +91,6 @@ fun NotificationListenerApp(
     onOpenNotificationList: () -> Unit,
     isPermissionGranted: Boolean
 ) {
-    // Reactive notification counts - automatically update when data changes
     val failedNotificationCount by repository.getFailedNotificationCountFlow().collectAsState(initial = 0)
     val undecidedNotificationCount by repository.getUndecidedNotificationCountFlow().collectAsState(initial = 0)
     

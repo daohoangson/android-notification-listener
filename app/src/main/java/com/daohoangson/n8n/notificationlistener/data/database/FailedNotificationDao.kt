@@ -11,17 +11,11 @@ interface FailedNotificationDao {
     @Insert
     suspend fun insertFailedNotification(notification: FailedNotification)
     
-    @Query("SELECT * FROM failed_notifications ORDER BY timestamp ASC")
-    suspend fun getAllFailedNotifications(): List<FailedNotification>
-    
     @Delete
     suspend fun deleteFailedNotification(notification: FailedNotification)
     
     @Delete
     suspend fun deleteFailedNotifications(notifications: List<FailedNotification>)
-    
-    @Query("SELECT COUNT(*) FROM failed_notifications")
-    suspend fun getFailedNotificationCount(): Int
     
     @Query("SELECT COUNT(*) FROM failed_notifications")
     fun getFailedNotificationCountFlow(): Flow<Int>

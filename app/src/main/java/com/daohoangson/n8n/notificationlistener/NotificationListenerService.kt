@@ -44,21 +44,17 @@ class NotificationListenerService : NotificationListenerService() {
     }
     
     private suspend fun processNotification(notificationData: NotificationData) {
-        // Check if notification should be ignored (black-holed)
         if (filterEngine.isIgnored(notificationData)) {
-            return // Black-hole ignored notifications
+            return
         }
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
         
         if (matchingUrls.isEmpty()) {
-            // Store as undecided notification
             val jsonPayload = notificationData.toJson()
             repository.storeUndecidedNotification(jsonPayload, "NO_MATCH", notificationData)
             return
         }
-        
-        // Send to matching URLs
         val jsonPayload = notificationData.toJson()
         
         for (webhookUrl in matchingUrls) {
@@ -71,6 +67,6 @@ class NotificationListenerService : NotificationListenerService() {
     
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.cancel() // Cancel all running coroutines to prevent memory leaks
+        serviceScope.cancel()
     }
 }
