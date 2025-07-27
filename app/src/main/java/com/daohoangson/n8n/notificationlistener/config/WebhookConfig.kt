@@ -50,7 +50,7 @@ object DefaultWebhookConfig {
                     ),
                     FilterRule(
                         packageName = "com.banking.app",
-                        textRegex = ".*fraud.*|.*suspicious.*".toRegex()
+                        textRegex = ".*fraud.*|.*suspicious.*".toRegex(RegexOption.IGNORE_CASE)
                     )
                 )
             )

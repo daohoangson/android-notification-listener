@@ -58,9 +58,9 @@ class NotificationFilterEngine @Inject constructor() {
         val jsonObject = gson.fromJson(jsonPayload, com.google.gson.JsonObject::class.java)
         
         return NotificationData(
-            packageName = jsonObject.get("packageName")?.asString ?: "",
-            title = jsonObject.get("title")?.asString,
-            text = jsonObject.get("text")?.asString
+            packageName = jsonObject.get("packageName")?.takeIf { !it.isJsonNull }?.asString ?: "",
+            title = jsonObject.get("title")?.takeIf { !it.isJsonNull }?.asString,
+            text = jsonObject.get("text")?.takeIf { !it.isJsonNull }?.asString
         )
     }
 }
