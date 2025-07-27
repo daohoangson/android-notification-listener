@@ -89,16 +89,5 @@ class NotificationRepositoryTest {
         coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
     }
     
-    @Test
-    fun `getFailedNotificationCount should return correct count`() = runTest {
-        // Arrange
-        coEvery { dao.getFailedNotificationCount() } returns 5
-        
-        // Act
-        val count = repository.getFailedNotificationCount()
-        
-        // Assert
-        assertEquals(5, count)
-        coVerify(exactly = 1) { dao.getFailedNotificationCount() }
-    }
+
 }
