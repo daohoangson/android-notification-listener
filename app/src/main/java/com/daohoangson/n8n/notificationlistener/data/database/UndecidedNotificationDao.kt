@@ -18,9 +18,6 @@ interface UndecidedNotificationDao {
     @Delete
     suspend fun deleteUndecidedNotifications(notifications: List<UndecidedNotification>)
     
-    @Query("DELETE FROM undecided_notifications")
-    suspend fun deleteAllUndecidedNotifications()
-    
     @Query("SELECT COUNT(*) FROM undecided_notifications")
     fun getUndecidedNotificationCountFlow(): Flow<Int>
     

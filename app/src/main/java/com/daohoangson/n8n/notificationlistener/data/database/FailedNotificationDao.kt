@@ -20,9 +20,6 @@ interface FailedNotificationDao {
     @Query("SELECT COUNT(*) FROM failed_notifications")
     fun getFailedNotificationCountFlow(): Flow<Int>
     
-    @Query("DELETE FROM failed_notifications")
-    suspend fun deleteAllFailedNotifications()
-
     @Query("SELECT * FROM failed_notifications ORDER BY timestamp ASC")
     fun getAllFailedNotificationsFlow(): Flow<List<FailedNotification>>
 

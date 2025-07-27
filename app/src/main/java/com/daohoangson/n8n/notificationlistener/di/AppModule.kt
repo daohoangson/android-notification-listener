@@ -43,7 +43,6 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNotificationRepository(
-        @ApplicationContext context: Context,
         webhookApi: WebhookApi,
         failedNotificationDao: FailedNotificationDao,
         undecidedNotificationDao: UndecidedNotificationDao
