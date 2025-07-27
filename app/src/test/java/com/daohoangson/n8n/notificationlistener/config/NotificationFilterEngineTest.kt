@@ -1,5 +1,6 @@
 package com.daohoangson.n8n.notificationlistener.config
 
+import com.daohoangson.n8n.notificationlistener.utils.NotificationData
 import org.junit.Test
 import org.junit.Assert.*
 
@@ -8,25 +9,42 @@ class NotificationFilterEngineTest {
     private val filterEngine = NotificationFilterEngine()
 
     @Test
-    fun isIgnored_shouldReturnTrueForIgnoredPackages() {
-        assertTrue(filterEngine.isIgnored("com.android.systemui"))
-        assertTrue(filterEngine.isIgnored("com.google.android.gms"))
-        assertTrue(filterEngine.isIgnored("com.android.providers.downloads"))
-    }
-
-    @Test
-    fun isIgnored_shouldReturnFalseForNonIgnoredPackages() {
-        assertFalse(filterEngine.isIgnored("com.slack"))
-        assertFalse(filterEngine.isIgnored("com.instagram.android"))
-        assertFalse(filterEngine.isIgnored("com.unknown.app"))
-    }
-
-    @Test
-    fun findMatchingUrls_shouldReturnEmptyListForIgnoredPackage() {
+    fun isIgnored_shouldReturnTrue_forIgnoredPackages() {
         val notificationData = NotificationData(
             packageName = "com.android.systemui",
-            title = "Test",
-            text = "Test message"
+            title = "Test Title",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
+        
+        assertTrue(filterEngine.isIgnored(notificationData))
+    }
+
+    @Test
+    fun isIgnored_shouldReturnFalse_forNonIgnoredPackages() {
+        val notificationData = NotificationData(
+            packageName = "com.slack",
+            title = "Test Title",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
+        
+        assertFalse(filterEngine.isIgnored(notificationData))
+    }
+
+    @Test
+    fun findMatchingUrls_shouldReturnEmpty_forIgnoredPackages() {
+        val notificationData = NotificationData(
+            packageName = "com.google.android.gms",
+            title = "Test Title",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -34,11 +52,14 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldMatchExactPackageName() {
+    fun findMatchingUrls_shouldReturnMatchingUrl_forPackageNameMatch() {
         val notificationData = NotificationData(
             packageName = "com.slack",
-            title = "New message",
-            text = "Hello world"
+            title = "Test Title",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -47,11 +68,29 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldMatchPackageNameWithTitleRegex() {
+    fun findMatchingUrls_shouldReturnEmpty_forNonMatchingPackage() {
+        val notificationData = NotificationData(
+            packageName = "com.nonexistent.app",
+            title = "Test Title",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
+        
+        val matchingUrls = filterEngine.findMatchingUrls(notificationData)
+        assertTrue(matchingUrls.isEmpty())
+    }
+
+    @Test
+    fun findMatchingUrls_shouldMatchTitleRegex() {
         val notificationData = NotificationData(
             packageName = "com.facebook.katana",
             title = "John mentioned you in a comment",
-            text = "Check out this post"
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -60,11 +99,14 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldNotMatchPackageNameWithFailingTitleRegex() {
+    fun findMatchingUrls_shouldNotMatch_whenTitleRegexFails() {
         val notificationData = NotificationData(
             packageName = "com.facebook.katana",
-            title = "John posted a new photo",
-            text = "Check out this post"
+            title = "John posted a photo",
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -72,11 +114,14 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldMatchPackageNameWithTextRegex() {
+    fun findMatchingUrls_shouldMatchTextRegex_caseInsensitive() {
         val notificationData = NotificationData(
             packageName = "com.banking.app",
             title = "Security Alert",
-            text = "Suspicious activity detected on your account"
+            text = "FRAUD detected on your account",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -85,11 +130,30 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldNotMatchPackageNameWithFailingTextRegex() {
+    fun findMatchingUrls_shouldMatchTextRegex_suspicious() {
+        val notificationData = NotificationData(
+            packageName = "com.banking.app",
+            title = "Security Alert",
+            text = "Suspicious activity detected",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
+        
+        val matchingUrls = filterEngine.findMatchingUrls(notificationData)
+        assertEquals(1, matchingUrls.size)
+        assertEquals("Urgent Alerts", matchingUrls[0].name)
+    }
+
+    @Test
+    fun findMatchingUrls_shouldNotMatch_whenTextRegexFails() {
         val notificationData = NotificationData(
             packageName = "com.banking.app",
             title = "Account Update",
-            text = "Your monthly statement is ready"
+            text = "Your balance has been updated",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -97,11 +161,14 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldReturnEmptyListForUnknownPackage() {
+    fun findMatchingUrls_shouldHandleNullTitle() {
         val notificationData = NotificationData(
-            packageName = "com.unknown.app",
-            title = "Test",
-            text = "Test message"
+            packageName = "com.facebook.katana",
+            title = null,
+            text = "Test Message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -109,13 +176,29 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun findMatchingUrls_shouldMatchMultipleUrls() {
-        // Note: With the current config, no package matches multiple URLs
-        // This test is for future configurations
+    fun findMatchingUrls_shouldHandleNullText() {
+        val notificationData = NotificationData(
+            packageName = "com.banking.app",
+            title = "Security Alert",
+            text = null,
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
+        
+        val matchingUrls = filterEngine.findMatchingUrls(notificationData)
+        assertTrue(matchingUrls.isEmpty())
+    }
+
+    @Test
+    fun findMatchingUrls_shouldMatchMultipleUrls_forSamePackage() {
         val notificationData = NotificationData(
             packageName = "com.instagram.android",
-            title = "New follower",
-            text = "Someone started following you"
+            title = "New message",
+            text = "You have a new direct message",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
         )
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
@@ -124,38 +207,18 @@ class NotificationFilterEngineTest {
     }
 
     @Test
-    fun extractNotificationData_shouldParseJsonCorrectly() {
-        val jsonPayload = """
-            {
-                "packageName": "com.slack",
-                "title": "New message",
-                "text": "Hello from John",
-                "timestamp": 1234567890,
-                "id": 123,
-                "tag": "message"
-            }
-        """.trimIndent()
+    fun findMatchingUrls_shouldMatch_withNoRegexRules() {
+        val notificationData = NotificationData(
+            packageName = "com.microsoft.teams",
+            title = "Any title",
+            text = "Any text",
+            timestamp = System.currentTimeMillis(),
+            id = 1,
+            tag = null
+        )
         
-        val notificationData = filterEngine.extractNotificationData(jsonPayload)
-        assertEquals("com.slack", notificationData.packageName)
-        assertEquals("New message", notificationData.title)
-        assertEquals("Hello from John", notificationData.text)
-    }
-
-    @Test
-    fun extractNotificationData_shouldHandleNullValues() {
-        val jsonPayload = """
-            {
-                "packageName": "com.test.app",
-                "title": null,
-                "text": null,
-                "timestamp": 1234567890
-            }
-        """.trimIndent()
-        
-        val notificationData = filterEngine.extractNotificationData(jsonPayload)
-        assertEquals("com.test.app", notificationData.packageName)
-        assertNull(notificationData.title)
-        assertNull(notificationData.text)
+        val matchingUrls = filterEngine.findMatchingUrls(notificationData)
+        assertEquals(1, matchingUrls.size)
+        assertEquals("Slack Notifications", matchingUrls[0].name)
     }
 }

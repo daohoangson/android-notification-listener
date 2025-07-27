@@ -47,9 +47,8 @@ object AppModule {
         @ApplicationContext context: Context,
         webhookApi: WebhookApi,
         failedNotificationDao: FailedNotificationDao,
-        undecidedNotificationDao: UndecidedNotificationDao,
-        filterEngine: NotificationFilterEngine
+        undecidedNotificationDao: UndecidedNotificationDao
     ): NotificationRepository {
-        return NotificationRepository(context, webhookApi, failedNotificationDao, undecidedNotificationDao, filterEngine)
+        return NotificationRepository(context, webhookApi, failedNotificationDao, undecidedNotificationDao)
     }
 }

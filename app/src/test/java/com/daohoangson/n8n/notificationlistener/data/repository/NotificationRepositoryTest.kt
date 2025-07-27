@@ -1,8 +1,6 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
 import android.content.Context
-import com.daohoangson.n8n.notificationlistener.config.NotificationData
-import com.daohoangson.n8n.notificationlistener.config.NotificationFilterEngine
 import com.daohoangson.n8n.notificationlistener.config.WebhookUrl
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
@@ -26,7 +24,6 @@ class NotificationRepositoryTest {
     private lateinit var context: Context
     private lateinit var dao: FailedNotificationDao
     private lateinit var undecidedDao: UndecidedNotificationDao
-    private lateinit var filterEngine: NotificationFilterEngine
     private lateinit var webhookApi: WebhookApi
     private lateinit var repository: NotificationRepository
     
@@ -35,84 +32,61 @@ class NotificationRepositoryTest {
         context = mockk(relaxed = true)
         dao = mockk(relaxed = true)
         undecidedDao = mockk(relaxed = true)
-        filterEngine = mockk(relaxed = true)
         webhookApi = mockk(relaxed = true)
         
-        repository = NotificationRepository(context, webhookApi, dao, undecidedDao, filterEngine)
+        repository = NotificationRepository(context, webhookApi, dao, undecidedDao)
     }
     
     @Test
-    fun `sendNotification success should not store in database`() = runTest {
+    fun `sendToWebhook success should return true`() = runTest {
         // Arrange
         val payload = "{\"packageName\":\"com.test\",\"title\":\"Test\",\"text\":\"Message\"}"
-        val notificationData = NotificationData("com.test", "Test", "Message")
         val webhookUrl = WebhookUrl("Test URL", "http://test.com", emptyList())
         val successResponse = mockk<Response<Unit>>()
         every { successResponse.isSuccessful } returns true
         
-        coEvery { filterEngine.extractNotificationData(payload) } returns notificationData
-        coEvery { filterEngine.isIgnored("com.test") } returns false
-        coEvery { filterEngine.findMatchingUrls(notificationData) } returns listOf(webhookUrl)
         coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returns successResponse
         
         // Act
-        repository.sendNotification(payload)
+        val result = repository.sendToWebhook(payload, webhookUrl)
         
         // Assert
+        assertTrue(result)
         coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
-        coVerify(exactly = 0) { dao.insertFailedNotification(any()) }
-        coVerify(exactly = 0) { undecidedDao.insertUndecidedNotification(any()) }
     }
     
     @Test
-    fun `sendNotification failure should store in database`() = runTest {
+    fun `sendToWebhook failure should return false`() = runTest {
         // Arrange
         val payload = "{\"packageName\":\"com.test\",\"title\":\"Test\",\"text\":\"Message\"}"
-        val notificationData = NotificationData("com.test", "Test", "Message")
         val webhookUrl = WebhookUrl("Test URL", "http://test.com", emptyList())
         val failureResponse = mockk<Response<Unit>>()
         every { failureResponse.isSuccessful } returns false
-        every { failureResponse.code() } returns 500
         
-        coEvery { filterEngine.extractNotificationData(payload) } returns notificationData
-        coEvery { filterEngine.isIgnored("com.test") } returns false
-        coEvery { filterEngine.findMatchingUrls(notificationData) } returns listOf(webhookUrl)
         coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } returns failureResponse
-        coEvery { dao.insertFailedNotification(any()) } returns Unit
-        
-        val capturedNotification = slot<FailedNotification>()
         
         // Act
-        repository.sendNotification(payload)
+        val result = repository.sendToWebhook(payload, webhookUrl)
         
         // Assert
+        assertFalse(result)
         coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
-        coVerify(exactly = 1) { dao.insertFailedNotification(capture(capturedNotification)) }
-        assertEquals(payload, capturedNotification.captured.payload)
     }
     
     @Test
-    fun `sendNotification exception should store in database`() = runTest {
+    fun `sendToWebhook exception should return false`() = runTest {
         // Arrange
         val payload = "{\"packageName\":\"com.test\",\"title\":\"Test\",\"text\":\"Message\"}"
-        val notificationData = NotificationData("com.test", "Test", "Message")
         val webhookUrl = WebhookUrl("Test URL", "http://test.com", emptyList())
         
-        coEvery { filterEngine.extractNotificationData(payload) } returns notificationData
-        coEvery { filterEngine.isIgnored("com.test") } returns false
-        coEvery { filterEngine.findMatchingUrls(notificationData) } returns listOf(webhookUrl)
         coEvery { webhookApi.sendNotification(any(), any<RequestBody>()) } throws Exception("Network error")
-        coEvery { dao.insertFailedNotification(any()) } returns Unit
-        
-        val capturedNotification = slot<FailedNotification>()
         
         // Act
-        repository.sendNotification(payload)
+        val result = repository.sendToWebhook(payload, webhookUrl)
         
         // Assert
+        assertFalse(result)
         coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
-        coVerify(exactly = 1) { dao.insertFailedNotification(capture(capturedNotification)) }
-        assertEquals(payload, capturedNotification.captured.payload)
     }
     
     @Test

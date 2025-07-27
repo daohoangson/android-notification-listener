@@ -1,8 +1,8 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
 import android.content.Context
-import com.daohoangson.n8n.notificationlistener.config.NotificationFilterEngine 
 import com.daohoangson.n8n.notificationlistener.config.WebhookUrl
+import com.daohoangson.n8n.notificationlistener.utils.NotificationData
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotification
@@ -28,101 +28,63 @@ class NotificationRepository @Inject constructor(
     private val context: Context,
     private val webhookApi: WebhookApi,
     private val failedNotificationDao: FailedNotificationDao,
-    private val undecidedNotificationDao: UndecidedNotificationDao,
-    private val filterEngine: NotificationFilterEngine
+    private val undecidedNotificationDao: UndecidedNotificationDao
 ) {
     
-    suspend fun processNotification(jsonPayload: String): ProcessingResult {
+    suspend fun sendToWebhook(jsonPayload: String, webhookUrl: WebhookUrl): Boolean {
         return withContext(Dispatchers.IO) {
-            try {
-                val notificationData = filterEngine.extractNotificationData(jsonPayload)
-                
-                if (filterEngine.isIgnored(notificationData.packageName)) {
-                    return@withContext ProcessingResult.IGNORED
-                }
-                
-                val matchingUrls = filterEngine.findMatchingUrls(notificationData)
-                
-                if (matchingUrls.isEmpty()) {
-                    storeUndecidedNotification(jsonPayload, "NO_MATCH", notificationData)
-                    return@withContext ProcessingResult.NO_MATCHING_RULES
-                }
-                
-                val results = sendToMultipleUrls(jsonPayload, matchingUrls, notificationData)
-                
-                return@withContext if (results.hasFailures) {
-                    ProcessingResult.FAILED_TO_SEND
-                } else {
-                    ProcessingResult.SENT_TO_URLS
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                ProcessingResult.FAILED_TO_SEND
-            }
-        }
-    }
-    
-    private suspend fun sendToMultipleUrls(
-        jsonPayload: String, 
-        urls: List<WebhookUrl>,
-        notificationData: com.daohoangson.n8n.notificationlistener.config.NotificationData
-    ): SendResults {
-        var hasFailures = false
-        
-        for (webhookUrl in urls) {
             try {
                 val requestBody = jsonPayload.toRequestBody("application/json".toMediaType())
                 val response = webhookApi.sendNotification(webhookUrl.url, requestBody)
-                
-                if (!response.isSuccessful) {
-                    storeFailedNotification(jsonPayload, webhookUrl, notificationData, "HTTP ${response.code()}")
-                    hasFailures = true
-                }
+                response.isSuccessful
             } catch (e: Exception) {
-                storeFailedNotification(jsonPayload, webhookUrl, notificationData, e.message)
-                hasFailures = true
+                false
             }
         }
-        
-        return SendResults(hasFailures)
     }
     
-    private suspend fun storeUndecidedNotification(
+    
+    suspend fun storeUndecidedNotification(
         payload: String, 
         reason: String,
-        notificationData: com.daohoangson.n8n.notificationlistener.config.NotificationData
+        notificationData: NotificationData
     ) {
-        val undecidedNotification = UndecidedNotification(
-            payload = payload,
-            packageName = notificationData.packageName,
-            title = notificationData.title,
-            text = notificationData.text,
-            reason = reason
-        )
-        undecidedNotificationDao.insertUndecidedNotification(undecidedNotification)
+        withContext(Dispatchers.IO) {
+            val undecidedNotification = UndecidedNotification(
+                payload = payload,
+                packageName = notificationData.packageName,
+                title = notificationData.title,
+                text = notificationData.text,
+                reason = reason
+            )
+            undecidedNotificationDao.insertUndecidedNotification(undecidedNotification)
+        }
     }
     
-    private suspend fun storeFailedNotification(
+    suspend fun storeFailedNotification(
         payload: String, 
         webhookUrl: WebhookUrl,
-        notificationData: com.daohoangson.n8n.notificationlistener.config.NotificationData,
+        notificationData: NotificationData,
         errorMessage: String?
     ) {
-        val failedNotification = FailedNotification(
-            payload = payload,
-            webhookUrl = webhookUrl.url,
-            webhookName = webhookUrl.name,
-            packageName = notificationData.packageName,
-            title = notificationData.title,
-            text = notificationData.text,
-            errorMessage = errorMessage
-        )
-        failedNotificationDao.insertFailedNotification(failedNotification)
+        withContext(Dispatchers.IO) {
+            val failedNotification = FailedNotification(
+                payload = payload,
+                webhookUrl = webhookUrl.url,
+                webhookName = webhookUrl.name,
+                packageName = notificationData.packageName,
+                title = notificationData.title,
+                text = notificationData.text,
+                errorMessage = errorMessage
+            )
+            failedNotificationDao.insertFailedNotification(failedNotification)
+        }
     }
     
-    // Legacy method for backward compatibility - now uses processNotification
+    // Legacy method for backward compatibility - deprecated
+    @Deprecated("Use direct StatusBarNotification processing in NotificationListenerService")
     suspend fun sendNotification(jsonPayload: String) {
-        processNotification(jsonPayload)
+        // This method is now deprecated as processing happens directly in NotificationListenerService
     }
     
     suspend fun getFailedNotificationCount(): Int {
@@ -230,5 +192,4 @@ class NotificationRepository @Inject constructor(
         }
     }
     
-    private data class SendResults(val hasFailures: Boolean)
 }
