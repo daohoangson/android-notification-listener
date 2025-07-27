@@ -151,6 +151,7 @@ fun <T> GenericNotificationsList(
     onDeleteAll: () -> Unit,
     repository: NotificationRepository,
     deleteAction: suspend (T) -> Unit,
+    bulkDeleteAction: suspend (List<T>) -> Unit,
     itemContent: @Composable (T, () -> Unit) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -166,9 +167,7 @@ fun <T> GenericNotificationsList(
                 Button(
                     onClick = { 
                         coroutineScope.launch {
-                            notifications.forEach { notification ->
-                                deleteAction(notification)
-                            }
+                            bulkDeleteAction(notifications)
                             onDeleteAll()
                         }
                     }
@@ -206,7 +205,8 @@ fun FailedNotificationsList(
         notifications = notifications,
         onDeleteAll = onDeleteAll,
         repository = repository,
-        deleteAction = { repository.deleteFailedNotification(it) }
+        deleteAction = { repository.deleteFailedNotification(it) },
+        bulkDeleteAction = { repository.deleteFailedNotifications(it) }
     ) { notification, onDeleteSingle ->
         FailedNotificationCard(
             notification = notification,
@@ -233,7 +233,8 @@ fun UndecidedNotificationsList(
         notifications = notifications,
         onDeleteAll = onDeleteAll,
         repository = repository,
-        deleteAction = { repository.deleteUndecidedNotification(it) }
+        deleteAction = { repository.deleteUndecidedNotification(it) },
+        bulkDeleteAction = { repository.deleteUndecidedNotifications(it) }
     ) { notification, onDeleteSingle ->
         UndecidedNotificationCard(
             notification = notification,

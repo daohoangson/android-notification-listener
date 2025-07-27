@@ -20,6 +20,9 @@ interface UndecidedNotificationDao {
     @Delete
     suspend fun deleteUndecidedNotification(undecidedNotification: UndecidedNotification)
     
+    @Delete
+    suspend fun deleteUndecidedNotifications(notifications: List<UndecidedNotification>)
+    
     @Query("DELETE FROM undecided_notifications")
     suspend fun deleteAllUndecidedNotifications()
     

@@ -191,9 +191,21 @@ class NotificationRepository @Inject constructor(
         }
     }
     
+    suspend fun deleteUndecidedNotifications(notifications: List<UndecidedNotification>) {
+        withContext(Dispatchers.IO) {
+            undecidedNotificationDao.deleteUndecidedNotifications(notifications)
+        }
+    }
+    
     suspend fun deleteFailedNotification(failedNotification: FailedNotification) {
         withContext(Dispatchers.IO) {
             failedNotificationDao.deleteFailedNotification(failedNotification)
+        }
+    }
+    
+    suspend fun deleteFailedNotifications(notifications: List<FailedNotification>) {
+        withContext(Dispatchers.IO) {
+            failedNotificationDao.deleteFailedNotifications(notifications)
         }
     }
     

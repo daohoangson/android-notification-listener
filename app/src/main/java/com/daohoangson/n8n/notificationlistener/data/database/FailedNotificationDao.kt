@@ -16,6 +16,9 @@ interface FailedNotificationDao {
     @Delete
     suspend fun deleteFailedNotification(notification: FailedNotification)
     
+    @Delete
+    suspend fun deleteFailedNotifications(notifications: List<FailedNotification>)
+    
     @Query("SELECT COUNT(*) FROM failed_notifications")
     suspend fun getFailedNotificationCount(): Int
     
