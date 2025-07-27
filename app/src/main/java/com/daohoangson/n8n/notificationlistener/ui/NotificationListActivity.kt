@@ -52,6 +52,15 @@ fun NotificationListScreen(repository: NotificationRepository) {
     var selectedUndecidedNotification by remember { mutableStateOf<UndecidedNotification?>(null) }
     val coroutineScope = rememberCoroutineScope()
     
+    fun reloadNotifications() {
+        coroutineScope.launch {
+            loadNotifications(repository) { failed, undecided ->
+                failedNotifications = failed
+                undecidedNotifications = undecided
+            }
+        }
+    }
+    
     LaunchedEffect(Unit) {
         loadNotifications(repository) { failed, undecided ->
             failedNotifications = failed
@@ -68,16 +77,9 @@ fun NotificationListScreen(repository: NotificationRepository) {
                 selectedUndecidedNotification = null
             },
             onUpload = { notification, url ->
-                // Handle upload
                 showUrlSelectionDialog = false
                 selectedUndecidedNotification = null
-                // Reload data after upload
-                coroutineScope.launch {
-                    loadNotifications(repository) { failed, undecided ->
-                        failedNotifications = failed
-                        undecidedNotifications = undecided
-                    }
-                }
+                reloadNotifications()
             },
             repository = repository
         )
@@ -121,33 +123,9 @@ fun NotificationListScreen(repository: NotificationRepository) {
             selectedTabIndex == 0 -> {
                 FailedNotificationsList(
                     notifications = failedNotifications,
-                    onRetry = { notification ->
-                        // Handle retry
-                        coroutineScope.launch {
-                            loadNotifications(repository) { failed, undecided ->
-                                failedNotifications = failed
-                                undecidedNotifications = undecided
-                            }
-                        }
-                    },
-                    onDelete = { notification ->
-                        // Handle delete
-                        coroutineScope.launch {
-                            loadNotifications(repository) { failed, undecided ->
-                                failedNotifications = failed
-                                undecidedNotifications = undecided
-                            }
-                        }
-                    },
-                    onDeleteAll = {
-                        // Handle delete all
-                        coroutineScope.launch {
-                            loadNotifications(repository) { failed, undecided ->
-                                failedNotifications = failed
-                                undecidedNotifications = undecided
-                            }
-                        }
-                    },
+                    onRetry = { reloadNotifications() },
+                    onDelete = { reloadNotifications() },
+                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
             }
@@ -158,26 +136,57 @@ fun NotificationListScreen(repository: NotificationRepository) {
                         selectedUndecidedNotification = notification
                         showUrlSelectionDialog = true
                     },
-                    onDelete = { notification ->
-                        // Handle delete
-                        coroutineScope.launch {
-                            loadNotifications(repository) { failed, undecided ->
-                                failedNotifications = failed
-                                undecidedNotifications = undecided
-                            }
-                        }
-                    },
-                    onDeleteAll = {
-                        // Handle delete all
-                        coroutineScope.launch {
-                            loadNotifications(repository) { failed, undecided ->
-                                failedNotifications = failed
-                                undecidedNotifications = undecided
-                            }
-                        }
-                    },
+                    onDelete = { reloadNotifications() },
+                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun <T> GenericNotificationsList(
+    notifications: List<T>,
+    onDeleteAll: () -> Unit,
+    repository: NotificationRepository,
+    deleteAction: suspend (T) -> Unit,
+    itemContent: @Composable (T, () -> Unit) -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    
+    Column {
+        if (notifications.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = { 
+                        coroutineScope.launch {
+                            notifications.forEach { notification ->
+                                deleteAction(notification)
+                            }
+                            onDeleteAll()
+                        }
+                    }
+                ) {
+                    Text("Delete All")
+                }
+            }
+        }
+        
+        LazyColumn {
+            items(notifications) { notification ->
+                itemContent(notification) {
+                    coroutineScope.launch {
+                        deleteAction(notification)
+                        onDeleteAll()
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -193,50 +202,22 @@ fun FailedNotificationsList(
 ) {
     val coroutineScope = rememberCoroutineScope()
     
-    Column {
-        if (notifications.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { 
-                        // Delete all failed notifications
-                        coroutineScope.launch {
-                            notifications.forEach { notification ->
-                                repository.deleteFailedNotification(notification)
-                            }
-                            onDeleteAll()
-                        }
-                    }
-                ) {
-                    Text("Delete All")
+    GenericNotificationsList(
+        notifications = notifications,
+        onDeleteAll = onDeleteAll,
+        repository = repository,
+        deleteAction = { repository.deleteFailedNotification(it) }
+    ) { notification, onDeleteSingle ->
+        FailedNotificationCard(
+            notification = notification,
+            onRetry = {
+                coroutineScope.launch {
+                    repository.retryFailedNotification(notification)
+                    onRetry(notification)
                 }
-            }
-        }
-        
-        LazyColumn {
-            items(notifications) { notification ->
-                FailedNotificationCard(
-                    notification = notification,
-                    onRetry = {
-                        coroutineScope.launch {
-                            repository.retryFailedNotification(notification)
-                            onRetry(notification)
-                        }
-                    },
-                    onDelete = {
-                        coroutineScope.launch {
-                            repository.deleteFailedNotification(notification)
-                            onDelete(notification)
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
+            },
+            onDelete = onDeleteSingle
+        )
     }
 }
 
@@ -248,48 +229,58 @@ fun UndecidedNotificationsList(
     onDeleteAll: () -> Unit,
     repository: NotificationRepository
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    
-    Column {
-        if (notifications.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { 
-                        // Delete all undecided notifications
-                        coroutineScope.launch {
-                            notifications.forEach { notification ->
-                                repository.deleteUndecidedNotification(notification)
-                            }
-                            onDeleteAll()
-                        }
-                    }
-                ) {
-                    Text("Delete All")
-                }
-            }
-        }
-        
-        LazyColumn {
-            items(notifications) { notification ->
-                UndecidedNotificationCard(
-                    notification = notification,
-                    onUpload = { onUpload(notification) },
-                    onDelete = {
-                        coroutineScope.launch {
-                            repository.deleteUndecidedNotification(notification)
-                            onDelete(notification)
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
+    GenericNotificationsList(
+        notifications = notifications,
+        onDeleteAll = onDeleteAll,
+        repository = repository,
+        deleteAction = { repository.deleteUndecidedNotification(it) }
+    ) { notification, onDeleteSingle ->
+        UndecidedNotificationCard(
+            notification = notification,
+            onUpload = { onUpload(notification) },
+            onDelete = onDeleteSingle
+        )
     }
+}
+
+@Composable
+fun NotificationDisplayContent(
+    packageName: String,
+    title: String?,
+    text: String?,
+    timestamp: Long,
+    additionalContent: @Composable () -> Unit = {},
+    actions: @Composable () -> Unit
+) {
+    Text(
+        text = "Package: $packageName",
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Bold
+    )
+    title?.let {
+        Text(
+            text = "Title: $it",
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+    text?.let {
+        Text(
+            text = "Text: $it",
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+    additionalContent()
+    Text(
+        text = "Time: ${java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(timestamp))}",
+        style = MaterialTheme.typography.bodySmall
+    )
+    
+    Spacer(modifier = Modifier.height(8.dp))
+    actions()
 }
 
 @Composable
@@ -305,55 +296,37 @@ fun FailedNotificationCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Package: ${notification.packageName}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            notification.title?.let {
-                Text(
-                    text = "Title: $it",
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            notification.text?.let {
-                Text(
-                    text = "Text: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Text(
-                text = "Webhook: ${notification.webhookName}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            notification.errorMessage?.let {
-                Text(
-                    text = "Error: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-            Text(
-                text = "Time: ${java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(notification.timestamp))}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = onRetry) {
-                    Text("Retry")
+            NotificationDisplayContent(
+                packageName = notification.packageName,
+                title = notification.title,
+                text = notification.text,
+                timestamp = notification.timestamp,
+                additionalContent = {
+                    Text(
+                        text = "Webhook: ${notification.webhookName}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    notification.errorMessage?.let {
+                        Text(
+                            text = "Error: $it",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(onClick = onRetry) {
+                            Text("Retry")
+                        }
+                        OutlinedButton(onClick = onDelete) {
+                            Text("Delete")
+                        }
+                    }
                 }
-                OutlinedButton(onClick = onDelete) {
-                    Text("Delete")
-                }
-            }
+            )
         }
     }
 }
@@ -371,49 +344,31 @@ fun UndecidedNotificationCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Package: ${notification.packageName}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            notification.title?.let {
-                Text(
-                    text = "Title: $it",
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            notification.text?.let {
-                Text(
-                    text = "Text: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Text(
-                text = "Reason: ${notification.reason}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Time: ${java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(notification.timestamp))}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(onClick = onUpload) {
-                    Text("Upload")
+            NotificationDisplayContent(
+                packageName = notification.packageName,
+                title = notification.title,
+                text = notification.text,
+                timestamp = notification.timestamp,
+                additionalContent = {
+                    Text(
+                        text = "Reason: ${notification.reason}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                },
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(onClick = onUpload) {
+                            Text("Upload")
+                        }
+                        OutlinedButton(onClick = onDelete) {
+                            Text("Delete")
+                        }
+                    }
                 }
-                OutlinedButton(onClick = onDelete) {
-                    Text("Delete")
-                }
-            }
+            )
         }
     }
 }

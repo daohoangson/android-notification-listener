@@ -37,13 +37,10 @@ class NotificationRepository @Inject constructor(
             try {
                 val notificationData = filterEngine.extractNotificationData(jsonPayload)
                 
-                // Check ignore list - black hole ignored notifications
                 if (filterEngine.isIgnored(notificationData.packageName)) {
-                    // Do nothing - completely ignore this notification
                     return@withContext ProcessingResult.IGNORED
                 }
                 
-                // Find matching URLs
                 val matchingUrls = filterEngine.findMatchingUrls(notificationData)
                 
                 if (matchingUrls.isEmpty()) {
@@ -51,7 +48,6 @@ class NotificationRepository @Inject constructor(
                     return@withContext ProcessingResult.NO_MATCHING_RULES
                 }
                 
-                // Send to all matching URLs
                 val results = sendToMultipleUrls(jsonPayload, matchingUrls, notificationData)
                 
                 return@withContext if (results.hasFailures) {

@@ -30,24 +30,8 @@ class NotificationListenerService : NotificationListenerService() {
             serviceScope.launch {
                 try {
                     val payload = NotificationDataExtractor.extractNotificationData(statusBarNotification)
-                    val result = repository.processNotification(payload)
-                    // Log processing result for debugging (could be useful for monitoring)
-                    when (result) {
-                        ProcessingResult.SENT_TO_URLS -> {
-                            // Successfully sent to webhook(s)
-                        }
-                        ProcessingResult.IGNORED -> {
-                            // Package was in ignore list
-                        }
-                        ProcessingResult.NO_MATCHING_RULES -> {
-                            // No rules matched, stored as undecided
-                        }
-                        ProcessingResult.FAILED_TO_SEND -> {
-                            // Network failure, stored as failed
-                        }
-                    }
+                    repository.processNotification(payload)
                 } catch (e: Exception) {
-                    // Log error but don't crash the service
                     e.printStackTrace()
                 }
             }
@@ -56,6 +40,5 @@ class NotificationListenerService : NotificationListenerService() {
     
     override fun onDestroy() {
         super.onDestroy()
-        // CoroutineScope will be cleaned up automatically when the service is destroyed
     }
 }

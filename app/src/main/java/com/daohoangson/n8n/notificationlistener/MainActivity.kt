@@ -80,10 +80,6 @@ class MainActivity : ComponentActivity() {
         startActivity(intent)
     }
     
-    override fun onResume() {
-        super.onResume()
-        // Refresh UI state when returning from settings
-    }
 }
 
 @Composable

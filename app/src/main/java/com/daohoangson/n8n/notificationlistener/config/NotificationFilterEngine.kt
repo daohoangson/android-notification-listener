@@ -28,17 +28,14 @@ class NotificationFilterEngine @Inject constructor() {
     }
     
     private fun matchesRule(notificationData: NotificationData, rule: FilterRule): Boolean {
-        // First check if package name matches
         if (rule.packageName != notificationData.packageName) {
             return false
         }
         
-        // If only package name is specified, it's a match
         if (rule.titleRegex == null && rule.textRegex == null) {
             return true
         }
         
-        // Check title regex if specified
         rule.titleRegex?.let { titleRegex ->
             val title = notificationData.title ?: ""
             if (!titleRegex.matches(title)) {
@@ -46,7 +43,6 @@ class NotificationFilterEngine @Inject constructor() {
             }
         }
         
-        // Check text regex if specified
         rule.textRegex?.let { textRegex ->
             val text = notificationData.text ?: ""
             if (!textRegex.matches(text)) {
@@ -58,9 +54,6 @@ class NotificationFilterEngine @Inject constructor() {
     }
     
     fun extractNotificationData(jsonPayload: String): NotificationData {
-        // Parse the JSON payload to extract the data we need for filtering
-        // For simplicity, we'll use the existing NotificationDataExtractor approach
-        // and parse the JSON string
         val gson = com.google.gson.Gson()
         val jsonObject = gson.fromJson(jsonPayload, com.google.gson.JsonObject::class.java)
         
