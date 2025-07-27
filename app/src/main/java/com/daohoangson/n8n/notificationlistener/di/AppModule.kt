@@ -5,7 +5,6 @@ import com.daohoangson.n8n.notificationlistener.data.database.AppDatabase
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotificationDao
 import com.daohoangson.n8n.notificationlistener.data.repository.NotificationRepository
-import com.daohoangson.n8n.notificationlistener.config.NotificationFilterEngine
 import com.daohoangson.n8n.notificationlistener.network.NetworkModule
 import com.daohoangson.n8n.notificationlistener.network.WebhookApi
 import dagger.Module
@@ -49,6 +48,6 @@ object AppModule {
         failedNotificationDao: FailedNotificationDao,
         undecidedNotificationDao: UndecidedNotificationDao
     ): NotificationRepository {
-        return NotificationRepository(context, webhookApi, failedNotificationDao, undecidedNotificationDao)
+        return NotificationRepository(webhookApi, failedNotificationDao, undecidedNotificationDao)
     }
 }

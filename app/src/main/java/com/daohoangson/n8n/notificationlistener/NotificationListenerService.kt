@@ -23,11 +23,7 @@ class NotificationListenerService : NotificationListenerService() {
     
     @Inject
     lateinit var filterEngine: NotificationFilterEngine
-    
-    override fun onCreate() {
-        super.onCreate()
-    }
-    
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         

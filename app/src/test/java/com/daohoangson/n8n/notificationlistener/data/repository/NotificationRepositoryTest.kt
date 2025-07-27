@@ -1,6 +1,5 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
-import android.content.Context
 import com.daohoangson.n8n.notificationlistener.config.WebhookUrl
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotificationDao
@@ -18,7 +17,6 @@ import org.junit.Test
 import retrofit2.Response
 
 class NotificationRepositoryTest {
-    private lateinit var context: Context
     private lateinit var dao: FailedNotificationDao
     private lateinit var undecidedDao: UndecidedNotificationDao
     private lateinit var webhookApi: WebhookApi
@@ -26,12 +24,11 @@ class NotificationRepositoryTest {
     
     @Before
     fun setup() {
-        context = mockk(relaxed = true)
         dao = mockk(relaxed = true)
         undecidedDao = mockk(relaxed = true)
         webhookApi = mockk(relaxed = true)
         
-        repository = NotificationRepository(context, webhookApi, dao, undecidedDao)
+        repository = NotificationRepository(webhookApi, dao, undecidedDao)
     }
     
     @Test

@@ -11,10 +11,7 @@ interface UndecidedNotificationDao {
     
     @Insert
     suspend fun insertUndecidedNotification(undecidedNotification: UndecidedNotification)
-    
-    @Query("SELECT * FROM undecided_notifications WHERE reason = :reason ORDER BY timestamp DESC")
-    suspend fun getUndecidedNotificationsByReason(reason: String): List<UndecidedNotification>
-    
+
     @Delete
     suspend fun deleteUndecidedNotification(undecidedNotification: UndecidedNotification)
     
