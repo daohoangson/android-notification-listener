@@ -69,20 +69,22 @@ fun NotificationListScreen(repository: NotificationRepository) {
         }
     }
     
-    if (showUrlSelectionDialog && selectedUndecidedNotification != null) {
-        UrlSelectionDialog(
-            notification = selectedUndecidedNotification!!,
-            onDismiss = { 
-                showUrlSelectionDialog = false
-                selectedUndecidedNotification = null
-            },
-            onUpload = { notification, url ->
-                showUrlSelectionDialog = false
-                selectedUndecidedNotification = null
-                reloadNotifications()
-            },
-            repository = repository
-        )
+    if (showUrlSelectionDialog) {
+        selectedUndecidedNotification?.let { notification ->
+            UrlSelectionDialog(
+                notification = notification,
+                onDismiss = { 
+                    showUrlSelectionDialog = false
+                    selectedUndecidedNotification = null
+                },
+                onUpload = { uploadedNotification, url ->
+                    showUrlSelectionDialog = false
+                    selectedUndecidedNotification = null
+                    reloadNotifications()
+                },
+                repository = repository
+            )
+        }
     }
     
     Column(
