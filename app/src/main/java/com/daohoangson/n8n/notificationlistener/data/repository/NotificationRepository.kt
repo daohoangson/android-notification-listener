@@ -1,6 +1,5 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
-import android.content.Context
 import com.daohoangson.n8n.notificationlistener.config.WebhookUrl
 import com.daohoangson.n8n.notificationlistener.utils.NotificationData
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
@@ -8,24 +7,16 @@ import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotificationDao
 import com.daohoangson.n8n.notificationlistener.network.WebhookApi
-import com.daohoangson.n8n.notificationlistener.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class ProcessingResult {
-    SENT_TO_URLS,
-    IGNORED,
-    NO_MATCHING_RULES,
-    FAILED_TO_SEND
-}
-
 @Singleton
 class NotificationRepository @Inject constructor(
-    private val context: Context,
     private val webhookApi: WebhookApi,
     private val failedNotificationDao: FailedNotificationDao,
     private val undecidedNotificationDao: UndecidedNotificationDao
@@ -43,6 +34,13 @@ class NotificationRepository @Inject constructor(
         }
     }
     
+    fun getFailedNotificationCountFlow(): Flow<Int> = failedNotificationDao.getFailedNotificationCountFlow()
+    
+    fun getUndecidedNotificationCountFlow(): Flow<Int> = undecidedNotificationDao.getUndecidedNotificationCountFlow()
+    
+    fun getAllFailedNotificationsFlow(): Flow<List<FailedNotification>> = failedNotificationDao.getAllFailedNotificationsFlow()
+    
+    fun getAllUndecidedNotificationsFlow(): Flow<List<UndecidedNotification>> = undecidedNotificationDao.getAllUndecidedNotificationsFlow()
     
     suspend fun storeUndecidedNotification(
         payload: String, 
@@ -81,29 +79,7 @@ class NotificationRepository @Inject constructor(
         }
     }
     
-    suspend fun getFailedNotificationCount(): Int {
-        return withContext(Dispatchers.IO) {
-            failedNotificationDao.getFailedNotificationCount()
-        }
-    }
-    
-    suspend fun getUndecidedNotificationCount(): Int {
-        return withContext(Dispatchers.IO) {
-            undecidedNotificationDao.getUndecidedNotificationCount()
-        }
-    }
-    
-    suspend fun getAllUndecidedNotifications(): List<UndecidedNotification> {
-        return withContext(Dispatchers.IO) {
-            undecidedNotificationDao.getAllUndecidedNotifications()
-        }
-    }
-    
-    suspend fun getAllFailedNotifications(): List<FailedNotification> {
-        return withContext(Dispatchers.IO) {
-            failedNotificationDao.getAllFailedNotifications()
-        }
-    }
+
     
     suspend fun retryFailedNotification(failedNotification: FailedNotification): Boolean {
         return withContext(Dispatchers.IO) {

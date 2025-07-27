@@ -10,6 +10,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,11 +23,7 @@ class NotificationListenerService : NotificationListenerService() {
     
     @Inject
     lateinit var filterEngine: NotificationFilterEngine
-    
-    override fun onCreate() {
-        super.onCreate()
-    }
-    
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         
@@ -43,21 +40,17 @@ class NotificationListenerService : NotificationListenerService() {
     }
     
     private suspend fun processNotification(notificationData: NotificationData) {
-        // Check if notification should be ignored (black-holed)
         if (filterEngine.isIgnored(notificationData)) {
-            return // Black-hole ignored notifications
+            return
         }
         
         val matchingUrls = filterEngine.findMatchingUrls(notificationData)
         
         if (matchingUrls.isEmpty()) {
-            // Store as undecided notification
             val jsonPayload = notificationData.toJson()
             repository.storeUndecidedNotification(jsonPayload, "NO_MATCH", notificationData)
             return
         }
-        
-        // Send to matching URLs
         val jsonPayload = notificationData.toJson()
         
         for (webhookUrl in matchingUrls) {
@@ -70,5 +63,6 @@ class NotificationListenerService : NotificationListenerService() {
     
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
     }
 }

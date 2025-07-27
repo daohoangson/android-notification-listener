@@ -3,18 +3,38 @@ package com.daohoangson.n8n.notificationlistener.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
-import androidx.compose.runtime.rememberCoroutineScope
 import com.daohoangson.n8n.notificationlistener.config.DefaultWebhookConfig
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotification
@@ -41,33 +61,14 @@ class NotificationListActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationListScreen(repository: NotificationRepository) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var failedNotifications by remember { mutableStateOf<List<FailedNotification>>(emptyList()) }
-    var undecidedNotifications by remember { mutableStateOf<List<UndecidedNotification>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    val failedNotifications by repository.getAllFailedNotificationsFlow().collectAsState(initial = emptyList())
+    val undecidedNotifications by repository.getAllUndecidedNotificationsFlow().collectAsState(initial = emptyList())
     var showUrlSelectionDialog by remember { mutableStateOf(false) }
     var selectedUndecidedNotification by remember { mutableStateOf<UndecidedNotification?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    
-    fun reloadNotifications() {
-        coroutineScope.launch {
-            loadNotifications(repository) { failed, undecided ->
-                failedNotifications = failed
-                undecidedNotifications = undecided
-            }
-        }
-    }
-    
-    LaunchedEffect(Unit) {
-        loadNotifications(repository) { failed, undecided ->
-            failedNotifications = failed
-            undecidedNotifications = undecided
-            isLoading = false
-        }
-    }
     
     if (showUrlSelectionDialog) {
         selectedUndecidedNotification?.let { notification ->
@@ -80,7 +81,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
                 onUpload = { uploadedNotification, url ->
                     showUrlSelectionDialog = false
                     selectedUndecidedNotification = null
-                    reloadNotifications()
                 },
                 repository = repository
             )
@@ -113,21 +113,10 @@ fun NotificationListScreen(repository: NotificationRepository) {
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-            selectedTabIndex == 0 -> {
+        when (selectedTabIndex) {
+            0 -> {
                 FailedNotificationsList(
                     notifications = failedNotifications,
-                    onRetry = { reloadNotifications() },
-                    onDelete = { reloadNotifications() },
-                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
             }
@@ -138,8 +127,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
                         selectedUndecidedNotification = notification
                         showUrlSelectionDialog = true
                     },
-                    onDelete = { reloadNotifications() },
-                    onDeleteAll = { reloadNotifications() },
                     repository = repository
                 )
             }
@@ -150,8 +137,6 @@ fun NotificationListScreen(repository: NotificationRepository) {
 @Composable
 fun <T> GenericNotificationsList(
     notifications: List<T>,
-    onDeleteAll: () -> Unit,
-    repository: NotificationRepository,
     deleteAction: suspend (T) -> Unit,
     bulkDeleteAction: suspend (List<T>) -> Unit,
     itemContent: @Composable (T, () -> Unit) -> Unit
@@ -170,7 +155,6 @@ fun <T> GenericNotificationsList(
                     onClick = { 
                         coroutineScope.launch {
                             bulkDeleteAction(notifications)
-                            onDeleteAll()
                         }
                     }
                 ) {
@@ -184,7 +168,6 @@ fun <T> GenericNotificationsList(
                 itemContent(notification) {
                     coroutineScope.launch {
                         deleteAction(notification)
-                        onDeleteAll()
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -196,17 +179,12 @@ fun <T> GenericNotificationsList(
 @Composable
 fun FailedNotificationsList(
     notifications: List<FailedNotification>,
-    onRetry: (FailedNotification) -> Unit,
-    onDelete: (FailedNotification) -> Unit,
-    onDeleteAll: () -> Unit,
     repository: NotificationRepository
 ) {
     val coroutineScope = rememberCoroutineScope()
     
     GenericNotificationsList(
         notifications = notifications,
-        onDeleteAll = onDeleteAll,
-        repository = repository,
         deleteAction = { repository.deleteFailedNotification(it) },
         bulkDeleteAction = { repository.deleteFailedNotifications(it) }
     ) { notification, onDeleteSingle ->
@@ -215,7 +193,6 @@ fun FailedNotificationsList(
             onRetry = {
                 coroutineScope.launch {
                     repository.retryFailedNotification(notification)
-                    onRetry(notification)
                 }
             },
             onDelete = onDeleteSingle
@@ -227,14 +204,10 @@ fun FailedNotificationsList(
 fun UndecidedNotificationsList(
     notifications: List<UndecidedNotification>,
     onUpload: (UndecidedNotification) -> Unit,
-    onDelete: (UndecidedNotification) -> Unit,
-    onDeleteAll: () -> Unit,
     repository: NotificationRepository
 ) {
     GenericNotificationsList(
         notifications = notifications,
-        onDeleteAll = onDeleteAll,
-        repository = repository,
         deleteAction = { repository.deleteUndecidedNotification(it) },
         bulkDeleteAction = { repository.deleteUndecidedNotifications(it) }
     ) { notification, onDeleteSingle ->
@@ -423,13 +396,4 @@ fun UrlSelectionDialog(
             }
         }
     )
-}
-
-private suspend fun loadNotifications(
-    repository: NotificationRepository,
-    onLoaded: (List<FailedNotification>, List<UndecidedNotification>) -> Unit
-) {
-    val failedNotifications = repository.getAllFailedNotifications()
-    val undecidedNotifications = repository.getAllUndecidedNotifications()
-    onLoaded(failedNotifications, undecidedNotifications)
 }

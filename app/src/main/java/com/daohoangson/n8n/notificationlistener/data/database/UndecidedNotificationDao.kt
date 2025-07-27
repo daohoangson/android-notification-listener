@@ -4,28 +4,23 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UndecidedNotificationDao {
     
     @Insert
     suspend fun insertUndecidedNotification(undecidedNotification: UndecidedNotification)
-    
-    @Query("SELECT * FROM undecided_notifications ORDER BY timestamp DESC")
-    suspend fun getAllUndecidedNotifications(): List<UndecidedNotification>
-    
-    @Query("SELECT * FROM undecided_notifications WHERE reason = :reason ORDER BY timestamp DESC")
-    suspend fun getUndecidedNotificationsByReason(reason: String): List<UndecidedNotification>
-    
+
     @Delete
     suspend fun deleteUndecidedNotification(undecidedNotification: UndecidedNotification)
     
     @Delete
     suspend fun deleteUndecidedNotifications(notifications: List<UndecidedNotification>)
     
-    @Query("DELETE FROM undecided_notifications")
-    suspend fun deleteAllUndecidedNotifications()
-    
     @Query("SELECT COUNT(*) FROM undecided_notifications")
-    suspend fun getUndecidedNotificationCount(): Int
+    fun getUndecidedNotificationCountFlow(): Flow<Int>
+    
+    @Query("SELECT * FROM undecided_notifications ORDER BY timestamp DESC")
+    fun getAllUndecidedNotificationsFlow(): Flow<List<UndecidedNotification>>
 }

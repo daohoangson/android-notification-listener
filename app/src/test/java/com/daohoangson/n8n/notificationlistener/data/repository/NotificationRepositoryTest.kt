@@ -1,8 +1,6 @@
 package com.daohoangson.n8n.notificationlistener.data.repository
 
-import android.content.Context
 import com.daohoangson.n8n.notificationlistener.config.WebhookUrl
-import com.daohoangson.n8n.notificationlistener.data.database.FailedNotification
 import com.daohoangson.n8n.notificationlistener.data.database.FailedNotificationDao
 import com.daohoangson.n8n.notificationlistener.data.database.UndecidedNotificationDao
 import com.daohoangson.n8n.notificationlistener.network.WebhookApi
@@ -10,10 +8,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -21,7 +17,6 @@ import org.junit.Test
 import retrofit2.Response
 
 class NotificationRepositoryTest {
-    private lateinit var context: Context
     private lateinit var dao: FailedNotificationDao
     private lateinit var undecidedDao: UndecidedNotificationDao
     private lateinit var webhookApi: WebhookApi
@@ -29,12 +24,11 @@ class NotificationRepositoryTest {
     
     @Before
     fun setup() {
-        context = mockk(relaxed = true)
         dao = mockk(relaxed = true)
         undecidedDao = mockk(relaxed = true)
         webhookApi = mockk(relaxed = true)
         
-        repository = NotificationRepository(context, webhookApi, dao, undecidedDao)
+        repository = NotificationRepository(webhookApi, dao, undecidedDao)
     }
     
     @Test
@@ -89,16 +83,5 @@ class NotificationRepositoryTest {
         coVerify(exactly = 1) { webhookApi.sendNotification(any(), any<RequestBody>()) }
     }
     
-    @Test
-    fun `getFailedNotificationCount should return correct count`() = runTest {
-        // Arrange
-        coEvery { dao.getFailedNotificationCount() } returns 5
-        
-        // Act
-        val count = repository.getFailedNotificationCount()
-        
-        // Assert
-        assertEquals(5, count)
-        coVerify(exactly = 1) { dao.getFailedNotificationCount() }
-    }
+
 }
