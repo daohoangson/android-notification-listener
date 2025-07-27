@@ -81,12 +81,6 @@ class NotificationRepository @Inject constructor(
         }
     }
     
-    // Legacy method for backward compatibility - deprecated
-    @Deprecated("Use direct StatusBarNotification processing in NotificationListenerService")
-    suspend fun sendNotification(jsonPayload: String) {
-        // This method is now deprecated as processing happens directly in NotificationListenerService
-    }
-    
     suspend fun getFailedNotificationCount(): Int {
         return withContext(Dispatchers.IO) {
             failedNotificationDao.getFailedNotificationCount()
@@ -170,26 +164,4 @@ class NotificationRepository @Inject constructor(
             failedNotificationDao.deleteFailedNotifications(notifications)
         }
     }
-    
-    // Legacy method for backward compatibility
-    suspend fun retryFailedNotifications(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val failedNotifications = failedNotificationDao.getAllFailedNotifications()
-                var allSuccessful = true
-                
-                for (failedNotification in failedNotifications) {
-                    val success = retryFailedNotification(failedNotification)
-                    if (!success) {
-                        allSuccessful = false
-                    }
-                }
-                
-                allSuccessful
-            } catch (e: Exception) {
-                false
-            }
-        }
-    }
-    
 }

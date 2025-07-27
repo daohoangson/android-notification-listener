@@ -92,7 +92,6 @@ fun NotificationListenerApp(
 ) {
     var failedNotificationCount by remember { mutableIntStateOf(0) }
     var undecidedNotificationCount by remember { mutableIntStateOf(0) }
-    var isRetrying by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     
     // Check notification counts
@@ -159,22 +158,5 @@ fun NotificationListenerApp(
         }
         
         Spacer(modifier = Modifier.height(8.dp))
-        
-        // Legacy retry all button (for backward compatibility)
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isRetrying = true
-                    val success = repository.retryFailedNotifications()
-                    if (success) {
-                        failedNotificationCount = repository.getFailedNotificationCount()
-                    }
-                    isRetrying = false
-                }
-            },
-            enabled = failedNotificationCount > 0 && !isRetrying
-        ) {
-            Text(if (isRetrying) "Retrying..." else "Retry All Failed")
-        }
     }
 }
