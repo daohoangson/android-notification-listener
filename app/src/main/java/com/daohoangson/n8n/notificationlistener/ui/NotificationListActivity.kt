@@ -243,6 +243,11 @@ fun UndecidedNotificationsList(
     }
 }
 
+object DateFormatters {
+    val notificationTime: java.time.format.DateTimeFormatter = 
+        java.time.format.DateTimeFormatter.ofPattern("MMM dd, HH:mm")
+}
+
 @Composable
 fun NotificationDisplayContent(
     packageName: String,
@@ -275,7 +280,7 @@ fun NotificationDisplayContent(
     }
     additionalContent()
     Text(
-        text = "Time: ${java.text.SimpleDateFormat("MMM dd, HH:mm").format(java.util.Date(timestamp))}",
+        text = "Time: ${java.time.Instant.ofEpochMilli(timestamp).atZone(java.time.ZoneId.systemDefault()).format(DateFormatters.notificationTime)}",
         style = MaterialTheme.typography.bodySmall
     )
     
