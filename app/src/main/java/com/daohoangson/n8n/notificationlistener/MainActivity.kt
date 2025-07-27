@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.daohoangson.n8n.notificationlistener.data.repository.NotificationRepository
+import com.daohoangson.n8n.notificationlistener.ui.NotificationListActivity
 import com.daohoangson.n8n.notificationlistener.ui.theme.MyApplicationTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         repository = repository,
                         onOpenNotificationSettings = { openNotificationListenerSettings() },
+                        onOpenNotificationList = { openNotificationListActivity() },
                         isPermissionGranted = isNotificationListenerEnabled()
                     )
                 }
@@ -73,10 +75,11 @@ class MainActivity : ComponentActivity() {
         startActivity(intent)
     }
     
-    override fun onResume() {
-        super.onResume()
-        // Refresh UI state when returning from settings
+    private fun openNotificationListActivity() {
+        val intent = Intent(this, NotificationListActivity::class.java)
+        startActivity(intent)
     }
+    
 }
 
 @Composable
@@ -84,15 +87,17 @@ fun NotificationListenerApp(
     modifier: Modifier = Modifier,
     repository: NotificationRepository,
     onOpenNotificationSettings: () -> Unit,
+    onOpenNotificationList: () -> Unit,
     isPermissionGranted: Boolean
 ) {
     var failedNotificationCount by remember { mutableIntStateOf(0) }
-    var isRetrying by remember { mutableStateOf(false) }
+    var undecidedNotificationCount by remember { mutableIntStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     
-    // Check failed notification count
+    // Check notification counts
     LaunchedEffect(Unit) {
         failedNotificationCount = repository.getFailedNotificationCount()
+        undecidedNotificationCount = repository.getUndecidedNotificationCount()
     }
     
     Column(
@@ -129,30 +134,29 @@ fun NotificationListenerApp(
         
         Spacer(modifier = Modifier.height(32.dp))
         
-        // Failed notifications status
+        // Notification counts
         Text(
             text = "Failed notifications: $failedNotificationCount",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
         
+        Text(
+            text = "Undecided notifications: $undecidedNotificationCount",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+        
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Upload failed notifications button
+        // Manage Notifications button
         Button(
-            onClick = {
-                coroutineScope.launch {
-                    isRetrying = true
-                    val success = repository.retryFailedNotifications()
-                    if (success) {
-                        failedNotificationCount = repository.getFailedNotificationCount()
-                    }
-                    isRetrying = false
-                }
-            },
-            enabled = failedNotificationCount > 0 && !isRetrying
+            onClick = onOpenNotificationList,
+            enabled = (failedNotificationCount > 0 || undecidedNotificationCount > 0)
         ) {
-            Text(if (isRetrying) "Uploading..." else "Upload Failed Notifications")
+            Text("Manage Notifications")
         }
+        
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }

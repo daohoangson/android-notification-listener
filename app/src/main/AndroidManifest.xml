@@ -27,6 +27,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.NotificationListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication" />
+
         <service
             android:name=".NotificationListenerService"
             android:exported="false"

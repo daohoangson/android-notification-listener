@@ -16,9 +16,18 @@ interface FailedNotificationDao {
     @Delete
     suspend fun deleteFailedNotification(notification: FailedNotification)
     
+    @Delete
+    suspend fun deleteFailedNotifications(notifications: List<FailedNotification>)
+    
     @Query("SELECT COUNT(*) FROM failed_notifications")
     suspend fun getFailedNotificationCount(): Int
     
     @Query("DELETE FROM failed_notifications")
     suspend fun deleteAllFailedNotifications()
+    
+    @Query("SELECT * FROM failed_notifications WHERE webhookUrl = :url ORDER BY timestamp DESC")
+    suspend fun getFailedNotificationsByUrl(url: String): List<FailedNotification>
+    
+    @Query("SELECT * FROM failed_notifications WHERE packageName = :packageName ORDER BY timestamp DESC")
+    suspend fun getFailedNotificationsByPackage(packageName: String): List<FailedNotification>
 }
