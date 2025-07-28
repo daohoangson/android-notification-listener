@@ -18,6 +18,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "WEBHOOK_URL_BANK", System.getenv("WEBHOOK_URL_BANK") ?: "\"https://n8n.cloud/webhook/bank\"")
+        buildConfigField("String", "WEBHOOK_URL_CHAT", System.getenv("WEBHOOK_URL_CHAT") ?: "\"https://n8n.cloud/webhook/chat\"")
     }
 
     buildTypes {

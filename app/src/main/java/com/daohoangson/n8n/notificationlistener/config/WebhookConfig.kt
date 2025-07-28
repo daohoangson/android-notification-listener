@@ -1,64 +1,43 @@
 package com.daohoangson.n8n.notificationlistener.config
 
+import com.daohoangson.n8n.notificationlistener.BuildConfig
+
 data class WebhookConfig(
-    val urls: List<WebhookUrl>,
-    val ignoredPackages: List<String>
+    val urls: List<WebhookUrl>, val ignoredPackages: List<Regex>
 )
 
 data class WebhookUrl(
-    val url: String,
-    val name: String,
-    val rules: List<FilterRule>
+    val url: String, val name: String, val rules: List<FilterRule>
 )
 
 data class FilterRule(
-    val packageName: String,
-    val titleRegex: Regex? = null,
-    val textRegex: Regex? = null
+    val packageName: Regex? = null, val title: Regex? = null, val text: Regex? = null
 )
 
 object DefaultWebhookConfig {
     val config = WebhookConfig(
         urls = listOf(
             WebhookUrl(
-                url = "https://n8n.cloud/webhook/slack-notifications",
-                name = "Slack Notifications",
-                rules = listOf(
-                    FilterRule(packageName = "com.slack"),
-                    FilterRule(packageName = "com.microsoft.teams")
+                url = BuildConfig.WEBHOOK_URL_BANK, name = "Bank apps", rules = listOf(
+                    FilterRule(packageName = Regex.fromLiteral("com.VCB")),
+                    FilterRule(packageName = Regex.fromLiteral("com.vib.myvib2")),
+                    FilterRule(packageName = Regex.fromLiteral("vn.com.techcombank.bb.app"))
                 )
             ),
             WebhookUrl(
-                url = "https://n8n.cloud/webhook/social-media",
-                name = "Social Media",
-                rules = listOf(
-                    FilterRule(packageName = "com.instagram.android"),
-                    FilterRule(packageName = "com.twitter.android"),
-                    FilterRule(
-                        packageName = "com.facebook.katana",
-                        titleRegex = ".*mentioned you.*".toRegex()
-                    )
+                url = BuildConfig.WEBHOOK_URL_CHAT, name = "Chat apps", rules = listOf(
+                    FilterRule(packageName = Regex.fromLiteral("com.discord")),
+                    FilterRule(packageName = Regex.fromLiteral("com.facebook.orca")),
+                    FilterRule(packageName = Regex.fromLiteral("com.Slack")),
+                    FilterRule(packageName = Regex.fromLiteral("org.telegram.messenger")),
+                    FilterRule(packageName = Regex.fromLiteral("com.zing.zalo"))
                 )
             ),
-            WebhookUrl(
-                url = "https://n8n.cloud/webhook/urgent-alerts",
-                name = "Urgent Alerts",
-                rules = listOf(
-                    FilterRule(
-                        packageName = "com.android.phone",
-                        titleRegex = ".*Emergency.*".toRegex()
-                    ),
-                    FilterRule(
-                        packageName = "com.banking.app",
-                        textRegex = ".*fraud.*|.*suspicious.*".toRegex(RegexOption.IGNORE_CASE)
-                    )
-                )
-            )
-        ),
-        ignoredPackages = listOf(
-            "com.android.systemui",
-            "com.google.android.gms",
-            "com.android.providers.downloads"
+        ), ignoredPackages = listOf(
+            Regex("^com\\.android.*"),
+            Regex("^com\\.google.*"),
+            Regex("^com\\.samsung.*"),
+            Regex("^com\\.sec.*")
         )
     )
 }
