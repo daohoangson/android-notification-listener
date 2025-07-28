@@ -25,7 +25,7 @@ class NotificationFilterEngine @Inject constructor() {
 
     private fun matchesRule(notificationData: NotificationData, rule: FilterRule): Boolean {
         rule.packageName?.let {
-            if (it.matches(notificationData.packageName)) {
+            if (!it.matches(notificationData.packageName)) {
                 return false
             }
         }
