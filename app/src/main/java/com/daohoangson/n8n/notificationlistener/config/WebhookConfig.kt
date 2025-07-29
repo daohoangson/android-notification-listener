@@ -43,14 +43,17 @@ object DefaultWebhookConfig {
             Regex.fromLiteral("com.zing.zalo"),
             // social
             Regex.fromLiteral("com.facebook.katana"),
+            Regex.fromLiteral("com.instagram.barcelona"),
             Regex.fromLiteral("com.linkedin.android"),
             // system
+            Regex.fromLiteral("android"),
             Regex("^com\\.android.*"),
             Regex("^com\\.google.*"),
             Regex("^com\\.samsung.*"),
             Regex("^com\\.sec.*"),
             // others
             Regex.fromLiteral("com.grabtaxi.passenger"),
+            Regex("^com.netflix.*"),
             Regex.fromLiteral("com.openai.chatgpt"),
         )
     )
