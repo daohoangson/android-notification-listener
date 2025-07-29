@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.apache.commons.lang3)
 
     // Room Database
     implementation(libs.androidx.room.runtime)

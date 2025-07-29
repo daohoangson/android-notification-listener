@@ -11,7 +11,7 @@ data class WebhookUrl(
 )
 
 data class FilterRule(
-    val packageName: Regex? = null, val title: Regex? = null, val text: Regex? = null
+    val packageName: Regex? = null, val text: Regex? = null
 )
 
 object DefaultWebhookConfig {
@@ -22,7 +22,15 @@ object DefaultWebhookConfig {
                     FilterRule(packageName = Regex.fromLiteral("com.mservice.momotransfer")),
                     FilterRule(packageName = Regex.fromLiteral("com.VCB")),
                     FilterRule(packageName = Regex.fromLiteral("com.vib.myvib2")),
-                    FilterRule(packageName = Regex.fromLiteral("vn.com.techcombank.bb.app"))
+
+                    FilterRule(
+                        packageName = Regex.fromLiteral("vn.com.techcombank.bb.app"),
+                        text = Regex(".*Han muc kha dung.*")
+                    ),
+                    FilterRule(
+                        packageName = Regex.fromLiteral("vn.com.techcombank.bb.app"),
+                        text = Regex(".*So du.*")
+                    )
                 )
             ),
         ), ignoredPackages = listOf(

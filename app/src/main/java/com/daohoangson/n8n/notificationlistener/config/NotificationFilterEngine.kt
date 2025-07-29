@@ -1,6 +1,8 @@
 package com.daohoangson.n8n.notificationlistener.config
 
 import com.daohoangson.n8n.notificationlistener.utils.NotificationData
+import org.apache.commons.lang3.StringUtils
+import java.text.Normalizer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,14 +32,9 @@ class NotificationFilterEngine @Inject constructor() {
             }
         }
 
-        rule.title?.let {
-            if (!it.matches(notificationData.title ?: "")) {
-                return false
-            }
-        }
-
         rule.text?.let {
-            if (!it.matches(notificationData.text ?: "")) {
+            val str = StringUtils.stripAccents(notificationData.text ?: "")
+            if (!it.matches(str)) {
                 return false
             }
         }

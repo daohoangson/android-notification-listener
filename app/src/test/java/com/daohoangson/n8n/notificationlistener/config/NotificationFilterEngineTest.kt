@@ -120,8 +120,8 @@ class NotificationFilterEngineTest {
         // Test Techcombank
         val techcombankNotification = NotificationData(
             packageName = "vn.com.techcombank.bb.app",
-            title = "Security Alert",
-            text = "Suspicious activity detected",
+            title = "- VND 100,000",
+            text = "Thẻ 4 .... .... 1234\\nChi tiêu: - VND 100,000 vào 01/01/2025 lúc 00:00:00 tại GOOGLE...\\nHạn mức khả dụng: VND 123,456,789",
             timestamp = System.currentTimeMillis(),
             id = 1,
             tag = null
