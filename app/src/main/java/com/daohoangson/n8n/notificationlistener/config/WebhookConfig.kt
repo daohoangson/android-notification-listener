@@ -19,25 +19,31 @@ object DefaultWebhookConfig {
         urls = listOf(
             WebhookUrl(
                 url = BuildConfig.WEBHOOK_URL_BANK, name = "Bank apps", rules = listOf(
+                    FilterRule(packageName = Regex.fromLiteral("com.mservice.momotransfer")),
                     FilterRule(packageName = Regex.fromLiteral("com.VCB")),
                     FilterRule(packageName = Regex.fromLiteral("com.vib.myvib2")),
                     FilterRule(packageName = Regex.fromLiteral("vn.com.techcombank.bb.app"))
                 )
             ),
-            WebhookUrl(
-                url = BuildConfig.WEBHOOK_URL_CHAT, name = "Chat apps", rules = listOf(
-                    FilterRule(packageName = Regex.fromLiteral("com.discord")),
-                    FilterRule(packageName = Regex.fromLiteral("com.facebook.orca")),
-                    FilterRule(packageName = Regex.fromLiteral("com.Slack")),
-                    FilterRule(packageName = Regex.fromLiteral("org.telegram.messenger")),
-                    FilterRule(packageName = Regex.fromLiteral("com.zing.zalo"))
-                )
-            ),
         ), ignoredPackages = listOf(
+            // chat
+            Regex.fromLiteral("com.discord"),
+            Regex.fromLiteral("com.facebook.orca"),
+            Regex.fromLiteral("com.Slack"),
+            Regex.fromLiteral("org.telegram.messenger"),
+            Regex.fromLiteral("com.whatsapp"),
+            Regex.fromLiteral("com.zing.zalo"),
+            // social
+            Regex.fromLiteral("com.facebook.katana"),
+            Regex.fromLiteral("com.linkedin.android"),
+            // system
             Regex("^com\\.android.*"),
             Regex("^com\\.google.*"),
             Regex("^com\\.samsung.*"),
-            Regex("^com\\.sec.*")
+            Regex("^com\\.sec.*"),
+            // others
+            Regex.fromLiteral("com.grabtaxi.passenger"),
+            Regex.fromLiteral("com.openai.chatgpt"),
         )
     )
 }
