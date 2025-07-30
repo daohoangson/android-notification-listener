@@ -15,6 +15,7 @@ object DefaultWebhookConfig {
         urls = listOf(
             WebhookUrl(
                 url = BuildConfig.WEBHOOK_URL_BANK, name = "Bank apps", packages = listOf(
+                    Regex.fromLiteral("com.bplus.vtpay"),
                     Regex.fromLiteral("com.mservice.momotransfer"),
                     Regex.fromLiteral("com.VCB"),
                     Regex.fromLiteral("com.vib.myvib2"),
