@@ -20,6 +20,7 @@ object NetworkModule {
         .build()
     
     private val retrofit = Retrofit.Builder()
+        .baseUrl("https://google.com")
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
