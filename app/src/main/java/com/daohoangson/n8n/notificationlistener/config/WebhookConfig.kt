@@ -16,10 +16,12 @@ object DefaultWebhookConfig {
             WebhookUrl(
                 url = BuildConfig.WEBHOOK_URL_BANK, name = "Bank apps", packages = listOf(
                     Regex.fromLiteral("com.bplus.vtpay"),
+                    Regex.fromLiteral("com.evnhcmc.evnmobileapp"),
                     Regex.fromLiteral("com.mservice.momotransfer"),
                     Regex.fromLiteral("com.VCB"),
                     Regex.fromLiteral("com.vib.myvib2"),
                     Regex.fromLiteral("vn.com.techcombank.bb.app"),
+                    Regex.fromLiteral("vn.com.vng.zalopay")
                 )
             ),
         ), ignoredPackages = listOf(
@@ -28,6 +30,7 @@ object DefaultWebhookConfig {
             Regex.fromLiteral("com.facebook.orca"),
             Regex.fromLiteral("com.Slack"),
             Regex.fromLiteral("org.telegram.messenger"),
+            Regex.fromLiteral("org.twitter.android"),
             Regex.fromLiteral("com.whatsapp"),
             Regex.fromLiteral("com.zing.zalo"),
             // social
@@ -42,9 +45,14 @@ object DefaultWebhookConfig {
             Regex("^com\\.samsung.*"),
             Regex("^com\\.sec.*"),
             // others
+            Regex.fromLiteral("com.echo.global.app"),
+            Regex.fromLiteral("com.glow.android.baby"),
             Regex.fromLiteral("com.grabtaxi.passenger"),
+            Regex.fromLiteral("com.microsoft.office.outlook"),
             Regex("^com.netflix.*"),
+            Regex.fromLiteral("com.nordvpn.android"),
             Regex.fromLiteral("com.openai.chatgpt"),
+            Regex.fromLiteral("com.viettel.ViettelPost"),
         )
     )
 }
