@@ -14,18 +14,18 @@ import com.daohoangson.n8n.notificationlistener.utils.Constants
 abstract class AppDatabase : RoomDatabase() {
     abstract fun failedNotificationDao(): FailedNotificationDao
     abstract fun undecidedNotificationDao(): UndecidedNotificationDao
-    
+
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     Constants.DATABASE_NAME
-                ).fallbackToDestructiveMigration()
+                ).fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
                 INSTANCE = instance
                 instance
